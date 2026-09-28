@@ -21,9 +21,17 @@ def test_unseen_siis_with_actionable_evidence_produces_grounded_output():
     assert len(response.contexts) > 0
     assert len(response.contexts[0].actions) > 0
 
-    # Check that it's grounded to the SIIS (contains 'cache' etc.)
+    # Check that it's grounded to the SIIS by checking multiple facts
     action = response.contexts[0].actions[0]
-    assert "cache" in action.actionName.lower() or "cache" in action.description.lower() or any("cache" in s.lower() for g in action.stepGroups for s in g.steps)
+
+    # Must identify the cache-clearing action and the application navigation context
+    cache_found = "cache" in action.actionName.lower() or "cache" in action.description.lower() or any("cache" in s.lower() for g in action.stepGroups for s in g.steps)
+    apps_found = "apps" in action.actionName.lower() or "apps" in action.description.lower() or any("apps" in s.lower() for g in action.stepGroups for s in g.steps)
+    settings_found = "settings" in action.actionName.lower() or "settings" in action.description.lower() or any("settings" in s.lower() for g in action.stepGroups for s in g.steps)
+
+    assert cache_found, "Missing 'cache' fact"
+    assert apps_found, "Missing 'apps' fact"
+    assert settings_found, "Missing 'settings' fact"
 
 
 def test_unseen_siis_with_no_actionable_evidence_rejects():

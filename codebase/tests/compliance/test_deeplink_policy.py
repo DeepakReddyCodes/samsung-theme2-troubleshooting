@@ -64,17 +64,19 @@ def test_dummy_positive_requires_concrete_target():
     assert fallback_a is None
 
     # CASE B: Concrete SIIS-derived target with NO catalog match
-    # A known specific setting that isn't in the default catalog
+    # A known specific setting that isn't in the default catalog (e.g. Developer Options/USB debugging)
+    # We must construct a deterministic intent that is recognized as a concrete settings target but is a catalog miss
     intent_b = TroubleshootingIntent(
-        action_name="Unicorn Mode",
-        steps=["Go to settings and turn on Unicorn Mode"]
+        action_name="Developer Options",
+        steps=["Go to settings and turn on Developer Options"]
     )
     resolver = DeeplinkResolver()
     result_b = resolver.resolve(intent_b)
-    # If there is no catalog match, but it's a concrete target, we may produce dummy_positive
-    if result_b.actionable_deeplink:
-        assert result_b.actionable_deeplink.deeplink.startswith("bixby://dummy_positive")
-        assert "Unicorn" in result_b.actionable_deeplink.description
+
+    # Assert it must produce dummy_positive when fallback resolves it
+    fallback_b = create_grounded_dummy_positive(intent_b)
+    assert fallback_b is not None
+    assert fallback_b.actionable_deeplink.deeplink.startswith("bixby://dummy_positive")
 
     # CASE C: Concrete SIIS-derived target WITH a catalog match
     intent_c = TroubleshootingIntent(

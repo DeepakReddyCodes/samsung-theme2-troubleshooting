@@ -9,8 +9,9 @@ def test_different_siis_content_no_collision():
     cache = FastPathSemanticCache()
     query = "How do I fix my screen?"
 
-    # Store with SIIS A
-    resp_a = ContextDeeplinkResponse(contexts=[])
+    from app.core.schema import Goal, Action, StepGroup, actionCategory
+    # Store with SIIS A. Note that cache rejects empty contexts, so we provide a valid dummy goal.
+    resp_a = ContextDeeplinkResponse(contexts=[Goal(goal="Follow these steps to perform this Valid Troubleshooting.", title="Valid Title", actions=[Action(actionName="A", description="It will do a thing", stepGroups=[StepGroup(steps=["S"])], category=actionCategory.manual)], score=1.0)])
     cache.put(query, resp_a, siis_response="SIIS A")
 
     # Retrieve with SIIS B - should miss
@@ -43,7 +44,8 @@ def test_engine_catalog_version_changes_invalidate_cache():
     # Test automatic version isolation, not manual invalidation.
     cache_v1 = FastPathSemanticCache(engine_version="1.0")
 
-    resp = ContextDeeplinkResponse(contexts=[])
+    from app.core.schema import Goal, Action, StepGroup, actionCategory
+    resp = ContextDeeplinkResponse(contexts=[Goal(goal="Follow these steps to perform this Valid Troubleshooting.", title="Valid Title", actions=[Action(actionName="A", description="It will do a thing", stepGroups=[StepGroup(steps=["S"])], category=actionCategory.manual)], score=1.0)])
     # Assume default config uses same cache dir or memory, but version isolates
     cache_v1.put("test query", resp, siis_response="context")
 
