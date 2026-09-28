@@ -14,11 +14,9 @@ def test_catalog_deeplink_validity():
     # Must actually resolve to an actionable deeplink for an auto action
     assert result.actionable_deeplink is not None
 
-    # The URI must exactly match the expected catalog entry, with no mutation
-    # We dynamically find what it resolves to using exact match from catalog
-    # to avoid brittle hardcoding of the specific opaque ID if it's "fdd7f62e24" or "cb03ac7425",
-    # but we will enforce it MUST be one of the literal Wi-Fi ones in the catalog rather than synthesized.
-    assert result.actionable_deeplink.deeplink in ["bixby://masked/act/cb03ac7425", "bixby://masked/act/fdd7f62e24", "bixby://masked/act/8ac075a869", "bixby://masked/act/12886ae633"]
+    # The URI must exactly match the expected catalog entry, with no mutation.
+    # We verify it against the known literal deterministic intent "Enable WiFi" mapping.
+    assert result.actionable_deeplink.deeplink == "bixby://masked/act/fdd7f62e24"
 
 
 def test_arbitrary_web_url_rejection():
@@ -62,7 +60,7 @@ def test_dummy_positive_requires_concrete_target():
 
     # CASE B: Concrete SIIS-derived target with NO catalog match
     # A known specific setting that isn't in the default catalog (e.g. Developer Options/USB debugging)
-    # We must construct a deterministic intent that is recognized as a concrete settings target but is a catalog miss
+    # We must construct a deterministic intent that is recognized as a concrete settings target but is a catalog miss.
     intent_b = TroubleshootingIntent(
         action_name="Developer Options",
         steps=["Go to settings and turn on Developer Options"]
@@ -70,7 +68,9 @@ def test_dummy_positive_requires_concrete_target():
     resolver = DeeplinkResolver()
     result_b = resolver.resolve(intent_b)
 
-    # The contract says fallback is allowed but not strictly mandatory. We do not assert 'is not None'.
+    # Note: create_grounded_dummy_positive tests the fallback construction logic itself,
+    # it does not prove the target originated from SIIS entirely on its own.
+    # The contract says fallback is allowed but not strictly mandatory.
     fallback_b = create_grounded_dummy_positive(intent_b)
     if fallback_b is not None:
         assert fallback_b.actionable_deeplink.deeplink == "bixby://dummy_positive"

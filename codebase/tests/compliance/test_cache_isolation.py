@@ -29,7 +29,8 @@ def test_polarity_differences_no_collision():
     """Ensure 'enable' vs 'disable' does not hit the same cache entry."""
     cache = FastPathSemanticCache()
 
-    resp = ContextDeeplinkResponse(contexts=[])
+    from app.core.schema import Goal, Action, StepGroup, actionCategory
+    resp = ContextDeeplinkResponse(contexts=[Goal(goal="Follow these steps to perform this Valid Troubleshooting.", title="Valid Title", actions=[Action(actionName="A", description="It will do a thing", stepGroups=[StepGroup(steps=["S"])], category=actionCategory.manual)], score=1.0)])
     cache.put("how do i enable wifi", resp, scenario_id="wifi_on")
 
     # Opposing intent

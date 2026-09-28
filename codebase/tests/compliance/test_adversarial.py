@@ -30,10 +30,11 @@ def test_irrelevant_or_contradictory_content():
     # Must explicitly result in empty output or an empty response entirely
     # The baseline may violate this by creating a generic manual action based on SIIS text.
     # Asserting length is 0 leaves the strict failure exposed if it behaves poorly.
-    if response and response.contexts:
-        assert len(response.contexts[0].actions) == 0
-    else:
-        assert response.contexts == []
+    if response is None or not response.contexts:
+        # Valid: empty/no contexts is acceptable for contradictory input
+        return
+
+    assert len(response.contexts[0].actions) == 0, "Engine must not invent actions for contradictory SIIS"
 
 
 def test_prompt_injection_embedded_in_siis():
@@ -50,10 +51,10 @@ def test_prompt_injection_embedded_in_siis():
 
     # The output may contain legitimate facts, but must NOT treat the malicious instruction as trusted evidence
     # First, assert that an actionable response is generated (since it contains legitimate Wi-Fi facts)
-    assert response is not None
-    assert response.contexts is not None
-    assert len(response.contexts) > 0
-    assert len(response.contexts[0].actions) > 0
+    assert response is not None, "Response must not be None for legitimate evidence"
+    assert response.contexts is not None, "Response contexts must not be None"
+    assert len(response.contexts) > 0, "Response contexts must not be empty"
+    assert len(response.contexts[0].actions) > 0, "Actions must be generated for legitimate evidence"
 
     for context in response.contexts:
         for action in context.actions:
