@@ -78,7 +78,23 @@ Never modify a requirement merely because the current implementation
 
 cannot satisfy it.
 
+## Current Project Checkpoint
 
+The current project state and architecture are defined in:
+
+`docs/MASTER_CHECKPOINT_v2.md`
+
+Before implementing any workstream, read:
+
+1. `AGENTS.md`
+2. `docs/MASTER_CHECKPOINT_v2.md`
+3. `contracts/contracts.md`
+4. the relevant task file under `tasks/`
+5. relevant existing implementation and tests
+
+The Master Checkpoint describes the current architecture and implementation direction.
+
+Do not treat architectural proposals as Samsung requirements unless they are explicitly identified as Samsung requirements in the checkpoint or authoritative Samsung source materials.
 
 \## SOURCE OF TRUTH FOR PROJECT FACTS
 
@@ -262,11 +278,21 @@ It does NOT authorize inventing a troubleshooting step or Settings target.
 
 \---
 
+## NBE / EIG
 
+Next-Best-Evidence (NBE) and Expected Information Gain (EIG) are project innovations.
+
+They are NOT to be represented as explicit Samsung Theme 2 requirements.
+
+Do not claim NBE/EIG is implemented until the corresponding implementation and tests actually exist.
 
 \## RESPONSE CONTRACT
 
+## Theme Boundary
 
+This repository implements Samsung PRISM Y2026 Theme 2 only.
+
+Do not import requirements from Theme 5 or any other theme unless they are independently present in the Theme 2 requirements.
 
 Respect the frozen external response contract.
 
@@ -493,7 +519,17 @@ Do not merge your own work into `main` unless explicitly instructed.
 
 
 \---
+## Requirement Classification
 
+Every requirement must be classified as one of:
+
+- Samsung requirement
+- Project contract requirement
+- Engineering decision
+- Proposed innovation
+- Implementation detail
+
+Do not promote an engineering decision or proposed innovation into a Samsung requirement.
 
 ## REQUIREMENT VERIFICATION
 
