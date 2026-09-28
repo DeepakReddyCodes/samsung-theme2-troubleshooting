@@ -27,3 +27,29 @@
 | Adversarial security | firewall/pipeline | adversarial tests | MISSING |
 | Reproducible frontend | frontend build | integration tests | FAIL in baseline |
 | Submission artifacts | root/docs/release | submission gate | PARTIAL |
+
+
+# Samsung Theme 2 Requirements Traceability
+
+| Samsung Requirement | Implementation | Test | Status |
+|---|---|---|---|
+| Query enrichment | W01 | ... | Planned |
+| Two-stage LLM | W01/W02 | ... | Partial |
+| Structured troubleshooting JSON | contracts/schema | ... | Partial |
+| Settings deeplink mapping | W03 | ... | Partial |
+| Reusable mapping | deeplink resolver | ... | Partial |
+| 10k+ scenario architecture | retrieval architecture | ... | Planned |
+| Fast-path cache | W04 | ... | Partial |
+| <300 ms target | W07 | ... | Planned |
+| REST API | existing API | ... | Existing |
+
+## Project Innovations
+
+These are not stated Samsung requirements:
+
+- Grounding Firewall
+- Next-Best-Evidence
+- Expected Information Gain
+- Adaptive evidence acquisition
+- Provider abstraction
+- Deterministic NBE scoring
