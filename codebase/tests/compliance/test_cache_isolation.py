@@ -11,14 +11,17 @@ def test_different_siis_content_no_collision():
 
     # Store with SIIS A
     resp_a = ContextDeeplinkResponse(contexts=[])
-    cache.put(query, resp_a, scenario_id="A")
+    cache.put(query, resp_a, siis_response="SIIS A")
 
-    # Retrieve with SIIS B - should miss (assuming different SIIS gives different norm_query/hash context)
-    # The current cache signature doesn't take siis_fingerprint, but it uses the engine logic.
-    # For testing isolation, we just do a miss test on another cache.
-    resp_b, meta = cache.get(query)
+    # Retrieve with SIIS B - should miss
+    resp_b, meta_b = cache.get(query, siis_response="SIIS B")
     assert resp_b is None
-    assert meta["cache_hit"] is False
+    assert meta_b["cache_hit"] is False
+
+    # Retrieve with SIIS A - should hit
+    resp_a_ret, meta_a = cache.get(query, siis_response="SIIS A")
+    assert resp_a_ret is not None
+    assert meta_a["cache_hit"] is True
 
 
 def test_polarity_differences_no_collision():
@@ -37,16 +40,21 @@ def test_polarity_differences_no_collision():
 
 def test_engine_catalog_version_changes_invalidate_cache():
     """Ensure version changes prevent stale entry reuse."""
-    cache = FastPathSemanticCache()
-    # Cache doesn't take engine_version/catalog_version in __init__.
-    # A true cache implementation must account for versions (this is a P1 compliance failure if it doesn't).
+    # Test automatic version isolation, not manual invalidation.
+    cache_v1 = FastPathSemanticCache(engine_version="1.0")
 
     resp = ContextDeeplinkResponse(contexts=[])
-    cache.put("test query", resp, scenario_id="test")
+    # Assume default config uses same cache dir or memory, but version isolates
+    cache_v1.put("test query", resp, siis_response="context")
 
-    # Simulating version change check manually or leaving failure exposed.
-    # Current codebase uses CacheVersionManager to handle this.
-    # We assert cache entry should miss if versions updated.
-    cache.invalidate("version_change")
-    resp_miss, meta = cache.get("test query")
+    # We should get a hit on v1
+    hit, meta = cache_v1.get("test query", siis_response="context")
+    assert hit is not None
+    assert meta["cache_hit"] is True
+
+    # Same query, but different cache instance with updated version
+    cache_v2 = FastPathSemanticCache(engine_version="2.0")
+    resp_miss, meta = cache_v2.get("test query", siis_response="context")
+    # Will miss because engine version is different
     assert resp_miss is None
+    assert meta["cache_hit"] is False

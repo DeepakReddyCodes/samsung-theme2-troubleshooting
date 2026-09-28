@@ -6,41 +6,83 @@ from app.services.deeplink_matcher import DeeplinkResolver
 def test_catalog_deeplink_validity():
     """Returned catalog deeplinks must exist in the supplied catalog exactly without mutation."""
     matcher = DeeplinkResolver()
-    # Mocking a match - we just test that the matcher can load the catalog and we can query it
 
-    # Let's test a known common action
+    # Use a known concrete intent that should deterministically resolve
+    # The default catalog includes "bixby://settings?target=Wi-Fi" for Wi-Fi settings
     result = matcher.resolve_from_step_group(action_name="Turn on Wi-Fi", steps=["Turn on Wi-Fi"])
-    # if it finds one, it should be in the catalog
-    if result.actionable_deeplink:
-        # We can't access private _catalog_uris directly here without checking its internal lexical matcher,
-        # but we assume the logic is to return an exact URI.
-        assert result.actionable_deeplink.deeplink is not None
+
+    # Must actually resolve to an actionable deeplink for an auto action
+    assert result.actionable_deeplink is not None
+
+    # The URI must exactly match the expected catalog entry, with no mutation
+    assert result.actionable_deeplink.deeplink.startswith("bixby://")
+
+    # Verify it exists in the authoritative catalog
+    # The firewall's load_catalog logic reads the deeplinks.json. We can use it to verify.
+    from app.core.firewall import ValidationFirewall
+    firewall = ValidationFirewall()
+    assert result.actionable_deeplink.deeplink in firewall.actionable_uris
 
 
 def test_arbitrary_web_url_rejection():
-    """Assert web URLs are rejected as deeplinks."""
-    matcher = DeeplinkResolver()
+    """Assert web URLs are rejected as deeplinks at the validation boundary."""
+    from app.core.firewall import ValidationFirewall
+    from app.core.schema import Action, StepGroup, actionCategory, Deeplink
+    firewall = ValidationFirewall()
 
-    # The matcher shouldn't return http/https links
-    result = matcher.resolve_from_step_group(action_name="test", steps=["Go to https://google.com"])
-    if result.actionable_deeplink:
-        assert not result.actionable_deeplink.deeplink.startswith("http://")
-        assert not result.actionable_deeplink.deeplink.startswith("https://")
+    # Construct an action with an arbitrary web URL as a deeplink
+    action = Action(
+        actionName="Test Web URL",
+        description="It will open web browser",
+        stepGroups=[StepGroup(
+            steps=["Go to website"],
+            actionableDeeplink=Deeplink(deeplink="https://google.com", description="")
+        )],
+        category=actionCategory.auto
+    )
+
+    # The firewall must reject this action due to the invalid deeplink URI format
+    act, errors = firewall.validate_action(action, allow_repair=False)
+    assert any("Actionable deeplink URI must start with 'bixby://', got 'https://google.com'" in e for e in errors)
 
 
 def test_dummy_positive_requires_concrete_target():
     """Verify dummy_positive is only allowed when a concrete SIIS-derived Settings target exists."""
-    # This tests the policy that we shouldn't invent "Display" out of nowhere.
     from app.services.fallback_resolver import create_grounded_dummy_positive
     from app.services.retriever.base import TroubleshootingIntent
+    from app.services.deeplink_matcher import DeeplinkResolver
 
-    # Generic missing step
-    intent = TroubleshootingIntent(
+    # CASE A: Generic/unrelated intent with no concrete Settings target
+    intent_a = TroubleshootingIntent(
         action_name="Generic Action",
         steps=["Some generic step"]
     )
-    fallback = create_grounded_dummy_positive(intent)
+    fallback_a = create_grounded_dummy_positive(intent_a)
     # The current codebase might return "bixby://dummy_positive?target=Display"
     # We assert the required behavior (it should NOT invent a target).
     # Currently it violates this. We write the test to expose it.
-    assert fallback is None
+    assert fallback_a is None
+
+    # CASE B: Concrete SIIS-derived target with NO catalog match
+    # A known specific setting that isn't in the default catalog
+    intent_b = TroubleshootingIntent(
+        action_name="Unicorn Mode",
+        steps=["Go to settings and turn on Unicorn Mode"]
+    )
+    resolver = DeeplinkResolver()
+    result_b = resolver.resolve(intent_b)
+    # If there is no catalog match, but it's a concrete target, we may produce dummy_positive
+    if result_b.actionable_deeplink:
+        assert result_b.actionable_deeplink.deeplink.startswith("bixby://dummy_positive")
+        assert "Unicorn" in result_b.actionable_deeplink.description
+
+    # CASE C: Concrete SIIS-derived target WITH a catalog match
+    intent_c = TroubleshootingIntent(
+        action_name="Turn on Wi-Fi",
+        steps=["Turn on Wi-Fi"]
+    )
+    result_c = resolver.resolve(intent_c)
+    assert result_c.actionable_deeplink is not None
+    # Must NOT replace a valid catalog URI with dummy_positive
+    assert not result_c.actionable_deeplink.deeplink.startswith("bixby://dummy_positive")
+    assert result_c.actionable_deeplink.deeplink.startswith("bixby://")

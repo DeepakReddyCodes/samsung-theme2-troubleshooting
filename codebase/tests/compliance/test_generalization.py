@@ -16,9 +16,14 @@ def test_unseen_siis_with_actionable_evidence_produces_grounded_output():
     # We expect some actions extracted by the deterministic extractor
     response = engine.extract_and_build(query, siis_content)
     assert response is not None
-    # Assuming it extracts something
-    if response.contexts and response.contexts[0].actions:
-        assert len(response.contexts[0].actions) > 0
+    # Explicitly check there is a response, and it contains actions
+    assert response.contexts is not None
+    assert len(response.contexts) > 0
+    assert len(response.contexts[0].actions) > 0
+
+    # Check that it's grounded to the SIIS (contains 'cache' etc.)
+    action = response.contexts[0].actions[0]
+    assert "cache" in action.actionName.lower() or "cache" in action.description.lower() or any("cache" in s.lower() for g in action.stepGroups for s in g.steps)
 
 
 def test_unseen_siis_with_no_actionable_evidence_rejects():
