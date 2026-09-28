@@ -33,6 +33,15 @@ def test_unseen_siis_with_actionable_evidence_produces_grounded_output():
     assert apps_found, "Missing 'apps' fact"
     assert settings_found, "Missing 'settings' fact"
 
+    # Negative grounding check: ensure unsupported facts are explicitly absent
+    unsupported_terms = ["usb debugging", "factory reset", "developer options"]
+    for term in unsupported_terms:
+        assert term not in action.actionName.lower(), f"Unsupported fact '{term}' found in actionName"
+        assert term not in action.description.lower(), f"Unsupported fact '{term}' found in description"
+        for g in action.stepGroups:
+            for s in g.steps:
+                assert term not in s.lower(), f"Unsupported fact '{term}' found in step"
+
 
 def test_unseen_siis_with_no_actionable_evidence_rejects():
     """Verify no facts are invented when SIIS has no actionable evidence."""
