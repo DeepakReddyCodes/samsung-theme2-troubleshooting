@@ -1,0 +1,35 @@
+{
+  "metadata": {
+    "total_evaluated": 29,
+    "timestamp": 1790689055.3807688
+  },
+  "grounding": {
+    "unseen_grounded_pct": 100.0
+  },
+  "action_validity": {
+    "canonical_valid_pct": 100.0,
+    "paraphrase_valid_pct": 100.0
+  },
+  "deeplink_resolution": {
+    "catalog_matches": 10,
+    "dummy_positives": 0,
+    "invalid_attempts": 0
+  },
+  "generalization": {
+    "unseen_scenarios_handled": 3,
+    "adversarial_safe_rejections": 0
+  },
+  "polarity": {
+    "correctness_pct": 100.0
+  },
+  "latency_ms": {
+    "canonical_p50": 2.230342000075325,
+    "canonical_p95": 3.240935000007994,
+    "paraphrase_p50": 1.9198329999881025,
+    "unseen_p50": 2.0747849999906975
+  },
+  "cache": {
+    "canonical_hit_rate": 100.0,
+    "semantic_hit_rate": 0.0
+  }
+}
