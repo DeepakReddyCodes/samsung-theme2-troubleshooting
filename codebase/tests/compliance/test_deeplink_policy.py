@@ -8,7 +8,7 @@ def test_catalog_deeplink_validity():
     matcher = DeeplinkResolver()
 
     # Use a known concrete intent that should deterministically resolve
-    # The default catalog includes "bixby://masked/act/cb03ac7425" for opening Wi-Fi settings
+    # The default catalog includes "bixby://masked/act/fdd7f62e24" for "Enable WiFi" settings
     result = matcher.resolve_from_step_group(action_name="Turn on Wi-Fi", steps=["Turn on Wi-Fi"])
 
     # Must actually resolve to an actionable deeplink for an auto action
@@ -68,9 +68,11 @@ def test_dummy_positive_requires_concrete_target():
     resolver = DeeplinkResolver()
     result_b = resolver.resolve(intent_b)
 
-    # Note: create_grounded_dummy_positive tests the fallback construction logic itself,
-    # it does not prove the target originated from SIIS entirely on its own.
-    # The contract says fallback is allowed but not strictly mandatory.
+    # Note: Calling create_grounded_dummy_positive directly tests the fallback construction logic/policy.
+    # It does NOT verify the end-to-end SIIS provenance of the target itself.
+    # The end-to-end SIIS provenance check is deferred to the appropriate production deeplink workstream
+    # and is recorded as a known downstream requirement.
+    # The contract says fallback is allowed for catalog misses, but not strictly mandatory.
     fallback_b = create_grounded_dummy_positive(intent_b)
     if fallback_b is not None:
         assert fallback_b.actionable_deeplink.deeplink == "bixby://dummy_positive"
