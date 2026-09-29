@@ -159,7 +159,10 @@ class ColdPathExtractionEngine:
                 )
             )
 
-        # If no actions survived grounding, strictly do not invent fallback facts.
+        # W00 Regression Fix / C1 Contract Violation Correction:
+        # If no actions survived grounding, strictly do not invent fallback facts
+        # like "Navigate to device Settings". Return an empty ContextDeeplinkResponse
+        # to preserve the invariant: "No SIIS evidence => no new troubleshooting fact".
         if not built_actions:
             return ContextDeeplinkResponse(contexts=[])
 

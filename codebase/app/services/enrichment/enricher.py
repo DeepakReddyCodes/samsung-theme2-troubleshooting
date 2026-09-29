@@ -29,17 +29,43 @@ class QueryEnricher:
     def __init__(self):
         # Conversational noise to strip
         self.noise_regex = re.compile(
-            r"(?i)\b(please|tell me|how do i|how to|i want to|can you|help me)\b"
+            r"(?i)\b(please|tell me|how do i|how to|i want to|can you|help me|hi|hello|hey|thanks)\b"
         )
 
-        self.enable_keywords = {"enable", "turn on", "activate", "start", "add", "setup"}
-        self.disable_keywords = {"disable", "turn off", "deactivate", "stop", "remove", "delete"}
+        # Exact explicit operations for polarity
+        self.enable_keywords = {"enable", "turn on", "activate"}
+        self.disable_keywords = {"disable", "turn off", "deactivate"}
+
+        # Explicit negation phrases
+        self.negation_phrases = {"do not", "don t", "dont", "do nt"}
+
+        # Entities
         self.entity_keywords = {"backup", "restore", "reset", "lock", "unlock"}
+
+    def _determine_polarity(self, text: str) -> str:
+        """Deterministically determine polarity, handling negations correctly."""
+        has_enable = any(kw in text for kw in self.enable_keywords)
+        has_disable = any(kw in text for kw in self.disable_keywords)
+        has_negation = any(phrase in text for phrase in self.negation_phrases)
+
+        # Do not confidently guess if both are somehow present
+        if has_enable and has_disable:
+            return "neutral"
+
+        if has_enable:
+            return "negated_enable" if has_negation else "enable"
+        if has_disable:
+            return "negated_disable" if has_negation else "disable"
+
+        return "neutral"
 
     def enrich(self, query: str) -> EnrichedQuery:
         """Enrich a raw query into an EnrichedQuery object."""
         if not query or not query.strip():
             return EnrichedQuery(normalized_query="", polarity="neutral", entities=[])
+
+        # Truncate at 1024 chars for safety against pathological inputs
+        query = query[:1024]
 
         # Strip conversational noise
         cleaned = self.noise_regex.sub("", query).strip()
@@ -54,25 +80,15 @@ class QueryEnricher:
         for pat, rep in COMPOUND_MAP.items():
             cleaned = re.sub(pat, rep, cleaned)
 
-        # Replace punctuation with spaces
+        # Replace punctuation with spaces to safely check for negations without apostrophes (don't -> don t)
         cleaned = re.sub(r"[^\w\s]", " ", cleaned)
         # Collapse multiple whitespaces
         cleaned = re.sub(r"\s+", " ", cleaned).strip()
 
-        # Determine polarity
-        tokens = set(cleaned.split())
-        polarity = "neutral"
-
-        # Check explicit keywords
-        has_enable = any(kw in tokens for kw in self.enable_keywords) or "turn on" in cleaned
-        has_disable = any(kw in tokens for kw in self.disable_keywords) or "turn off" in cleaned
-
-        if has_enable and not has_disable:
-            polarity = "enable"
-        elif has_disable and not has_enable:
-            polarity = "disable"
+        polarity = self._determine_polarity(cleaned)
 
         # Determine entities
+        tokens = set(cleaned.split())
         entities = []
         for kw in self.entity_keywords:
             if kw in tokens:
@@ -87,5 +103,5 @@ class QueryEnricher:
         return EnrichedQuery(
             normalized_query=cleaned,
             polarity=polarity,
-            entities=entities
+            entities=sorted(entities)
         )
