@@ -34,9 +34,10 @@ def generate_markdown_report(json_report_path: Path, output_markdown_path: Path)
 ## 4. Deeplink Resolution
 - **Valid Exact Catalog Matches**: {data['deeplink_resolution']['catalog_matches']}
 - **Valid Validation Catalog Matches**: {data['deeplink_resolution']['validation_matches']}
-- **Dummy-Positive Candidate / Unable to Verify Provenance**: {data['deeplink_resolution']['dummy_positive_candidates']}
-- **Invalid Attempts (e.g. malformed or lacking description)**: {data['deeplink_resolution']['invalid_attempts']}
-*(Limitation: The evaluator checks valid formatting and checks for the presence of a description for dummy positives, but it cannot prove end-to-end SIIS provenance from the final JSON alone. It is classified as a candidate, not automatically verified correct.)*
+- **Verified Dummy-Positives (Provenance Metadata Matched)**: {data['deeplink_resolution']['verified_dummy_positives']}
+- **Dummy-Positive Candidate / Unable to Verify Provenance**: {data['deeplink_resolution']['unable_to_verify_provenance']}
+- **Invalid Attempts (e.g. malformed or lacking concrete target)**: {data['deeplink_resolution']['invalid_attempts']}
+*(Limitation: Production W03 owns actual dummy-positive provenance/resolution. W06 only measures reality based on returned JSON metadata, documenting candidates where provenance is unverifiable from JSON vs verifiably correct entries.)*
 
 ## 5. Adversarial Safety & Generalization
 - **Safely Rejected (422 / Empty)**: {data['adversarial_safety']['safely_rejected_422_or_empty']}

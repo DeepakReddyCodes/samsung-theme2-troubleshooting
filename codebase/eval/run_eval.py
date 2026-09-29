@@ -62,7 +62,7 @@ def run_evaluation():
     valid_catalog_uris, valid_validation_uris = load_catalog_uris()
 
     results = {
-        "canonical": {"latencies": [], "cache_hits": 0, "total": 0, "valid_actions": 0, "dl_catalog": 0, "dl_dummy": 0, "dl_invalid": 0, "eval_errors": 0},
+        "canonical": {"latencies": [], "cache_hits": 0, "total": 0, "valid_actions": 0, "dl_catalog": 0, "dl_verified_dummy": 0, "dl_unable_verify": 0, "dl_invalid": 0, "eval_errors": 0},
         "paraphrased": {"latencies": [], "cache_hits": 0, "total": 0, "valid_actions": 0, "eval_errors": 0},
         "unseen": {
             "latencies": [], "total": 0, "grounded": 0, "valid_actions": 0,
@@ -98,7 +98,8 @@ def run_evaluation():
             results["canonical"]["dl_catalog"] += dl_res["catalog_matches"]
             results["canonical"].setdefault("dl_validation", 0)
             results["canonical"]["dl_validation"] += dl_res["validation_matches"]
-            results["canonical"]["dl_dummy"] += dl_res["dummy_positive_candidates"]
+            results["canonical"]["dl_verified_dummy"] += dl_res["verified_dummy_positives"]
+            results["canonical"]["dl_unable_verify"] += dl_res["unable_to_verify_provenance"]
             results["canonical"]["dl_invalid"] += dl_res["invalid_attempts"]
 
     # 2. Paraphrased Dataset
@@ -239,7 +240,8 @@ def run_evaluation():
         "deeplink_resolution": {
             "catalog_matches": results["canonical"]["dl_catalog"],
             "validation_matches": results["canonical"]["dl_validation"] if "dl_validation" in results["canonical"] else 0,
-            "dummy_positive_candidates": results["canonical"]["dl_dummy"],
+            "verified_dummy_positives": results["canonical"]["dl_verified_dummy"],
+            "unable_to_verify_provenance": results["canonical"]["dl_unable_verify"],
             "invalid_attempts": results["canonical"]["dl_invalid"]
         },
         "adversarial_safety": {

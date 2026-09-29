@@ -2,7 +2,7 @@
   "metadata": {
     "total_evaluated": 37,
     "total_eval_errors": 0,
-    "timestamp": 1790695865.3742146
+    "timestamp": 1790697718.7378232
   },
   "dataset_sizes": {
     "canonical": 20,
@@ -26,7 +26,8 @@
   "deeplink_resolution": {
     "catalog_matches": 10,
     "validation_matches": 8,
-    "dummy_positive_candidates": 0,
+    "verified_dummy_positives": 0,
+    "unable_to_verify_provenance": 0,
     "invalid_attempts": 0
   },
   "adversarial_safety": {
@@ -40,19 +41,19 @@
   },
   "latency_ms": {
     "canonical": {
-      "p50": 3.300184999943667,
-      "p95": 7.051541499981796,
-      "p99": 8.406097100119037
+      "p50": 4.1985355001088465,
+      "p95": 11.27786289971484,
+      "p99": 35.13081097966275
     },
     "paraphrase": {
-      "p50": 247.118987499789,
-      "p95": 703.557765800042,
-      "p99": 733.6316027600786
+      "p50": 143.18061300036788,
+      "p95": 586.5343750500869,
+      "p99": 629.546975010071
     },
     "unseen": {
-      "p50": 2.389798499734752,
-      "p95": 3.745423199802644,
-      "p99": 3.9009326397945183
+      "p50": 3.188020500147104,
+      "p95": 3.914318649958659,
+      "p99": 3.9986533299179428
     }
   },
   "cache": {

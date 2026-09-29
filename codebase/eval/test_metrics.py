@@ -91,14 +91,15 @@ def test_deeplink_resolution_exact_matches():
     result = check_deeplink_resolution(resp, valid_catalog, valid_validation)
     assert result["catalog_matches"] == 1
     assert result["validation_matches"] == 1
-    assert result["dummy_positive_candidates"] == 0
+    assert result["verified_dummy_positives"] == 0
+    assert result["unable_to_verify_provenance"] == 0
     assert result["invalid_attempts"] == 0
 
-def test_deeplink_resolution_dummy_positive_candidates():
+def test_deeplink_resolution_dummy_positives():
     valid_catalog = set()
     valid_validation = set()
 
-    # Concrete-looking description
+    # Concrete-looking description, NO provenance metadata => Unable to verify
     resp_concrete = {
         "contexts": [{
             "actions": [{
@@ -112,10 +113,30 @@ def test_deeplink_resolution_dummy_positive_candidates():
         }]
     }
     res_concrete = check_deeplink_resolution(resp_concrete, valid_catalog, valid_validation)
-    assert res_concrete["dummy_positive_candidates"] == 1
+    assert res_concrete["verified_dummy_positives"] == 0
+    assert res_concrete["unable_to_verify_provenance"] == 1
     assert res_concrete["invalid_attempts"] == 0
 
-    # Generic description (Evaluator accepts as candidate because it cannot verify provenance, but it's NOT marked verified/correct)
+    # Concrete-looking description WITH provenance metadata => Verified
+    resp_provenance = {
+        "contexts": [{
+            "actions": [{
+                "stepGroups": [{
+                    "actionableDeeplink": {
+                        "deeplink": "bixby://dummy_positive",
+                        "description": "It will open Display Settings",
+                        "siis_provenance": {"source_match": "Display Settings"}
+                    }
+                }]
+            }]
+        }]
+    }
+    res_provenance = check_deeplink_resolution(resp_provenance, valid_catalog, valid_validation)
+    assert res_provenance["verified_dummy_positives"] == 1
+    assert res_provenance["unable_to_verify_provenance"] == 0
+    assert res_provenance["invalid_attempts"] == 0
+
+    # Generic description => Invalid
     resp_generic = {
         "contexts": [{
             "actions": [{
@@ -129,8 +150,9 @@ def test_deeplink_resolution_dummy_positive_candidates():
         }]
     }
     res_generic = check_deeplink_resolution(resp_generic, valid_catalog, valid_validation)
-    assert res_generic["dummy_positive_candidates"] == 1
-    assert res_generic["invalid_attempts"] == 0
+    assert res_generic["verified_dummy_positives"] == 0
+    assert res_generic["unable_to_verify_provenance"] == 0
+    assert res_generic["invalid_attempts"] == 1
 
     # Missing description entirely => Malformed / Invalid
     resp_missing = {
@@ -146,7 +168,8 @@ def test_deeplink_resolution_dummy_positive_candidates():
         }]
     }
     res_missing = check_deeplink_resolution(resp_missing, valid_catalog, valid_validation)
-    assert res_missing["dummy_positive_candidates"] == 0
+    assert res_missing["verified_dummy_positives"] == 0
+    assert res_missing["unable_to_verify_provenance"] == 0
     assert res_missing["invalid_attempts"] == 1
 
 def test_deeplink_resolution_invalid_uris():

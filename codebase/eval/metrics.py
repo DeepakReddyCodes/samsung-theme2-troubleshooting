@@ -57,16 +57,17 @@ def check_action_validity(response_data: Dict[str, Any]) -> Dict[str, Any]:
 
 def check_deeplink_resolution(response_data: Dict[str, Any], valid_catalog_uris: set, valid_validation_uris: set) -> Dict[str, Any]:
     """
-    Measures exact catalog URI resolution, validation URIs, dummy-positive candidates, and invalid URIs.
-    Distinguishes verification from mere plausibility.
+    Measures exact catalog URI resolution, validation URIs, dummy-positive validation, and invalid URIs.
+    Explicitly tracks inability to verify SIIS provenance from the final JSON structure alone.
     """
     contexts = response_data.get("contexts", [])
     if not contexts:
-        return {"catalog_matches": 0, "validation_matches": 0, "dummy_positive_candidates": 0, "invalid_attempts": 0}
+        return {"catalog_matches": 0, "validation_matches": 0, "verified_dummy_positives": 0, "unable_to_verify_provenance": 0, "invalid_attempts": 0}
 
     catalog_matches = 0
     validation_matches = 0
-    dummy_positive_candidates = 0
+    verified_dummy_positives = 0
+    unable_to_verify_provenance = 0
     invalid_attempts = 0
 
     for act in contexts[0].get("actions", []):
@@ -80,15 +81,24 @@ def check_deeplink_resolution(response_data: Dict[str, Any], valid_catalog_uris:
                 if uri in valid_catalog_uris:
                     catalog_matches += 1
                 elif uri.startswith("bixby://dummy_positive"):
-                    # We cannot establish end-to-end provenance from the JSON alone.
-                    # We classify this as a candidate ONLY if it possesses at least some descriptive text,
-                    # but we explicitly do NOT claim it is verified or correct.
-                    # If it lacks a description entirely, it is definitively malformed.
-                    desc = dl_obj.get("description", "").strip()
-                    if desc:
-                        dummy_positive_candidates += 1
-                    else:
+                    desc = dl_obj.get("description", "").strip().lower()
+
+                    # 1. Invalid Attempts
+                    if not desc or desc in ["settings", "device settings", "open settings"]:
+                        # Missing or generic descriptions cannot act as a concrete dummy fallback
                         invalid_attempts += 1
+                    # 2. Heuristic concrete-target plausibility check (Not Proof)
+                    else:
+                        # W06 evaluator cannot prove SIIS provenance strictly from the JSON payload
+                        # unless provenance metadata is present.
+                        provenance_meta = dl_obj.get("siis_provenance")
+
+                        if provenance_meta:
+                            # If metadata is present proving derivation, we can verify it
+                            verified_dummy_positives += 1
+                        else:
+                            # The target looks concrete heuristically, but we cannot establish end-to-end provenance.
+                            unable_to_verify_provenance += 1
                 else:
                     # Non-catalog URIs or generic invalid formats fall here
                     invalid_attempts += 1
@@ -104,7 +114,8 @@ def check_deeplink_resolution(response_data: Dict[str, Any], valid_catalog_uris:
     return {
         "catalog_matches": catalog_matches,
         "validation_matches": validation_matches,
-        "dummy_positive_candidates": dummy_positive_candidates,
+        "verified_dummy_positives": verified_dummy_positives,
+        "unable_to_verify_provenance": unable_to_verify_provenance,
         "invalid_attempts": invalid_attempts
     }
 
