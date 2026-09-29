@@ -4,8 +4,7 @@
 `feature/w08-frontend-demo`
 
 ## 2. Files Changed
-* `codebase/frontend/index.html`: Reverted the invalid root mount point modification.
-* `codebase/frontend/tests/frontend.test.mjs`: Restored test assertion to validate the original empty root node.
+* `codebase/frontend/tests/frontend.test.mjs`: Restored test assertion to validate the original empty root node, and verified production bundle JS/CSS linkages structurally.
 * Built frontend assets (`dist/index.html`, `dist/assets/*`).
 
 ## 3. UI Features Implemented
