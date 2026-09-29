@@ -21,6 +21,7 @@ def generate_markdown_report(json_report_path: Path, output_markdown_path: Path)
 ## 1. Grounding (Measured via Lexical Approximation)
 - **Unseen Actionable Scenarios Checked**: {data['grounding']['unseen_actionable_total']}
 - **Grounded Action Outputs Detected**: {data['grounding']['measured_unseen_grounded_actions']}
+*(Note: This uses a lexical bounding approximation and does not establish semantic entailment.)*
 
 ## 2. Empty Response Semantics
 - **Correctly Empty (Safe Rejection)**: {data['empty_response_semantics']['correctly_empty']}
@@ -32,8 +33,9 @@ def generate_markdown_report(json_report_path: Path, output_markdown_path: Path)
 
 ## 4. Deeplink Resolution
 - **Valid Catalog Matches**: {data['deeplink_resolution']['catalog_matches']}
-- **Dummy Positive Fallbacks (Valid)**: {data['deeplink_resolution']['dummy_positives']}
+- **Dummy Positive Fallbacks (Valid Formatting)**: {data['deeplink_resolution']['dummy_positives']}
 - **Invalid Attempts (e.g. malformed or lacking concrete target)**: {data['deeplink_resolution']['invalid_attempts']}
+*(Limitation: The evaluator checks valid formatting and target description length for dummy positives, but it cannot prove end-to-end SIIS provenance from the output JSON alone.)*
 
 ## 5. Adversarial Safety & Generalization
 - **Safely Rejected (422 / Empty)**: {data['adversarial_safety']['safely_rejected_422_or_empty']}
@@ -53,7 +55,15 @@ def generate_markdown_report(json_report_path: Path, output_markdown_path: Path)
 
 ## 9. Cache Performance
 - **Exact Cache Hit Rate**: {data['cache']['canonical_hit_rate']:.2f}%
-- **Semantic Cache Hit Rate**: {data['cache']['semantic_hit_rate']:.2f}% (Observed value, not an explicit requirement test for this small fixture)
+- **Semantic Cache Hit Rate**: {data['cache']['semantic_hit_rate']:.2f}% (Observed value on this specific limited dataset)
+
+## Evaluation Dataset Sizes
+- Canonical Fixtures Evaluated: {data['dataset_sizes']['canonical']}
+- Paraphrase Fixtures Evaluated: {data['dataset_sizes']['paraphrased']}
+- Unseen SIIS Scenarios Evaluated: {data['dataset_sizes']['unseen']}
+- Adversarial Scenarios Evaluated: {data['dataset_sizes']['adversarial']}
+- Polarity Scenarios Evaluated: {data['dataset_sizes']['polarity']}
+*(Note: These sizes represent small validation datasets for correctness behavior mapping. They do not imply statistically comprehensive generalization.)*
 
 ## Known Limitations and Defects
 - The semantic cache hit rate for paraphrased queries is low due to the exact matching constraints currently present in the cache isolation strategy.

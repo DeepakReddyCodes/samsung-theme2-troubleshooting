@@ -37,21 +37,27 @@ def test_grounding_unsupported_step():
 def test_grounding_empty_response():
     resp = {"contexts": []}
     result = check_grounding(resp, "Some text")
-    assert result["is_grounded"] is True
-    assert "Empty response" in result["note"]
+    # Empty response should explicitly not be marked as successfully "grounded" to avoid false inflation
+    assert result["is_grounded"] is False
+    assert result["is_empty"] is True
+    assert "not evaluated for actionable grounding" in result["note"]
 
 def test_polarity_correctness():
-    # True positives
-    assert check_polarity_correctness({"contexts": [{"actions": [{"actionName": "Enable Wi-Fi"}]}]}, "enable") is True
-    assert check_polarity_correctness({"contexts": [{"actions": [{"actionName": "Turn on Wi-Fi"}]}]}, "enable") is True
-    assert check_polarity_correctness({"contexts": [{"actions": [{"actionName": "Disable Wi-Fi"}]}]}, "disable") is True
+    # True positives with valid target
+    assert check_polarity_correctness({"contexts": [{"actions": [{"actionName": "Enable Wi-Fi"}]}]}, "enable", "wi-fi") is True
+    assert check_polarity_correctness({"contexts": [{"actions": [{"actionName": "Turn on Wi-Fi"}]}]}, "enable", "wi-fi") is True
+    assert check_polarity_correctness({"contexts": [{"actions": [{"actionName": "Disable Wi-Fi"}]}]}, "disable", "wi-fi") is True
 
     # Contradictory polarities
-    assert check_polarity_correctness({"contexts": [{"actions": [{"actionName": "Enable and disable Wi-Fi"}]}]}, "enable") is False
+    assert check_polarity_correctness({"contexts": [{"actions": [{"actionName": "Enable and disable Wi-Fi"}]}]}, "enable", "wi-fi") is False
 
     # Explicit negations
-    assert check_polarity_correctness({"contexts": [{"actions": [{"actionName": "Do not turn on Wi-Fi"}]}]}, "negated_enable") is True
-    assert check_polarity_correctness({"contexts": [{"actions": [{"actionName": "Do not turn on Wi-Fi"}]}]}, "enable") is False
+    assert check_polarity_correctness({"contexts": [{"actions": [{"actionName": "Do not turn on Wi-Fi"}]}]}, "negated_enable", "wi-fi") is True
+    assert check_polarity_correctness({"contexts": [{"actions": [{"actionName": "Do not turn on Wi-Fi"}]}]}, "enable", "wi-fi") is False
+
+    # Missing target
+    assert check_polarity_correctness({"contexts": [{"actions": [{"actionName": "Enable Bluetooth"}]}]}, "enable", "wi-fi") is False
+    assert check_polarity_correctness({"contexts": [{"actions": [{"actionName": "Turn on Bluetooth"}]}]}, "enable", "bluetooth") is True
 
 def test_calculate_latency_metrics():
     latencies = [10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0]

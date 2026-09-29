@@ -110,8 +110,15 @@ def check_grounding(response_data: Dict[str, Any], siis_text: str) -> Dict[str, 
     Identifies explicitly unsupported action content.
     """
     contexts = response_data.get("contexts", [])
-    if not contexts:
-        return {"is_grounded": True, "unsupported_facts": [], "note": "Empty response - inherently grounded"}
+
+    # An empty response is NOT evidence of successful grounding. It is an evaluation-not-applicable safe state.
+    if not contexts or not contexts[0].get("actions"):
+        return {
+            "is_grounded": False,
+            "is_empty": True,
+            "unsupported_facts": [],
+            "note": "Empty response - not evaluated for actionable grounding"
+        }
 
     siis_lower = siis_text.lower()
 
@@ -142,20 +149,27 @@ def check_grounding(response_data: Dict[str, Any], siis_text: str) -> Dict[str, 
     is_grounded = len(unsupported_facts) == 0
     return {
         "is_grounded": is_grounded,
+        "is_empty": False,
         "unsupported_facts": unsupported_facts,
-        "note": "Lexical approximation of semantic grounding"
+        "note": "Lexical grounding approximation (does not establish full semantic entailment)"
     }
 
-def check_polarity_correctness(response_data: Dict[str, Any], expected_polarity: str) -> bool:
+def check_polarity_correctness(response_data: Dict[str, Any], expected_polarity: str, target_entity: str) -> bool:
     """
-    Verifies the intended action polarity (enable vs disable) rigorously.
-    Tests for explicit negations and contradictory output.
+    Verifies the intended action polarity (enable vs disable) AND the specified target entity rigorously.
+    Tests for explicit negations, contradictory output, and wrong targets.
     """
     contexts = response_data.get("contexts", [])
     if not contexts:
         return False
 
     actions_text = json.dumps(contexts[0].get("actions", [])).lower()
+
+    target_lower = target_entity.lower()
+
+    # Must contain the target to pass
+    if target_lower not in actions_text:
+        return False
 
     enable_terms = {"enable", "turn on"}
     disable_terms = {"disable", "turn off"}
