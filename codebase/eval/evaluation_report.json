@@ -1,35 +1,54 @@
 {
   "metadata": {
-    "total_evaluated": 29,
-    "timestamp": 1790689055.3807688
+    "total_evaluated": 36,
+    "total_eval_errors": 0,
+    "timestamp": 1790689975.5566697
   },
   "grounding": {
-    "unseen_grounded_pct": 100.0
+    "measured_unseen_grounded_actions": 4,
+    "unseen_actionable_total": 4
+  },
+  "empty_response_semantics": {
+    "correctly_empty": 0,
+    "incorrectly_empty": 0
   },
   "action_validity": {
-    "canonical_valid_pct": 100.0,
-    "paraphrase_valid_pct": 100.0
+    "canonical_valid_actions": 20,
+    "paraphrase_valid_actions": 4
   },
   "deeplink_resolution": {
     "catalog_matches": 10,
     "dummy_positives": 0,
     "invalid_attempts": 0
   },
-  "generalization": {
-    "unseen_scenarios_handled": 3,
-    "adversarial_safe_rejections": 0
+  "adversarial_safety": {
+    "safely_rejected_422_or_empty": 0,
+    "safely_ignored_malicious_content": 0,
+    "unsafe_propagation": 4
   },
   "polarity": {
-    "correctness_pct": 100.0
+    "semantic_correctness_count": 2,
+    "total_polarity_cases": 4
   },
   "latency_ms": {
-    "canonical_p50": 2.230342000075325,
-    "canonical_p95": 3.240935000007994,
-    "paraphrase_p50": 1.9198329999881025,
-    "unseen_p50": 2.0747849999906975
+    "canonical": {
+      "p50": 3.8861700001007193,
+      "p95": 11.354086549829415,
+      "p99": 37.89098450985189
+    },
+    "paraphrase": {
+      "p50": 260.06696299998566,
+      "p95": 742.2409688999437,
+      "p99": 774.0889753799296
+    },
+    "unseen": {
+      "p50": 5.803285499951016,
+      "p95": 929.0253648000654,
+      "p99": 1059.0053937600735
+    }
   },
   "cache": {
     "canonical_hit_rate": 100.0,
-    "semantic_hit_rate": 0.0
+    "semantic_hit_rate": 50.0
   }
 }
