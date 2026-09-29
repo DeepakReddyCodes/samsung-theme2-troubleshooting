@@ -21,29 +21,40 @@ cd codebase && python scripts/benchmark_engine.py
 ```
 
 ## 4. Measured Metrics
-From local benchmark execution on a pre-warmed system:
-- **Startup Latency**: ~14.755 s (Gate Failed - official target <= 8.0s)
+*Note: Measurements derive strictly from the `offline_deterministic` execution mode (no real LLM called) generated via `benchmark_engine.py` using a pre-warmed system state.*
+
+- **Startup Latency**: ~10.167 s (Gate Failed - W07 Engineering Performance Target: <= 8.0s)
 - **Canonical Repeat (Warm Cache)**
     - Hit Rate: 100.00%
-    - Server Latency (P50/P95/P99): 0.47ms / 1.01ms / 1.04ms
-    - End-to-End HTTP (P50/P95/P99): 2.42ms / 3.22ms / 4.65ms
+    - Server Latency (P50/P95/P99): 0.46ms / 1.00ms / 1.08ms
+    - End-to-End HTTP (P50/P95/P99): 2.21ms / 2.87ms / 3.32ms
 - **Paraphrased Queries**
     - Hit Rate: 92.50% (Semantic)
-    - Server Latency (P50/P95/P99): 15.53ms / 41.83ms / 74.90ms
+    - Server Latency (P50/P95/P99): 14.47ms / 37.34ms / 71.42ms
 - **Unseen SIIS Scenarios (Cold Path)**
-    - Server Latency (P50/P95/P99): 36.74ms / 39.35ms / 39.77ms
+    - Server Latency (P50/P95/P99): 30.68ms / 34.48ms / 36.31ms
     - **Component P50 Latencies**:
-        - Cache Lookup: 15.88ms
-        - Extraction Engine: 20.44ms (Deterministic fallback in current test harness)
-        - Response Serialization (Pydantic + Firewall): 0.29ms
+        - Cache Lookup: 13.47ms
+        - Extraction Engine: 17.45ms (Deterministic fallback in current test harness)
+        - Response Serialization (Pydantic + Firewall): 0.23ms
 
 ## 5. Sample Benchmark Output
 ```
-[BENCHMARK 4] Benchmark C: Unseen SIIS Scenarios Generalization Engine (12 scenarios)...
-  [unseen_01_battery_drain] Latency:  38.47ms | Path: cold_path              | Valid: True | Goal: Follow these steps to perform this Battery Life Issues And Troubleshooting
+================================================================================
+SAMSUNG PRISM THEME 2 — W07 ENGINEERING BENCHMARK SUITE
+================================================================================
+OS: Linux 6.8.0 | Python: 3.12.13
+Mode: offline_deterministic | Provider: DeterministicFallbackExtractor (Mock)
+NOTE: Cold path extraction in this execution mode uses
+deterministic/offline extraction. It does not represent
+production LLM (e.g. Gemini/OpenAI) latency.
+================================================================================
 ...
--> Unseen Scenarios P50=36.74ms | P95=39.35ms | P99=39.77ms
-   - Component P50s: Cache=15.88ms | Extraction=20.44ms | Serialization=0.29ms
+[BENCHMARK 4] Benchmark C: Unseen SIIS Scenarios Generalization Engine (12 scenarios)...
+  [unseen_01_battery_drain] Latency:  36.77ms | Path: cold_path              | Valid: True | Goal: Follow these steps to perform this Battery Life Issues And Troubleshooting
+...
+-> Unseen Scenarios P50=30.68ms | P95=34.48ms | P99=36.31ms
+   - Component P50s: Cache=13.47ms | Extraction=17.45ms | Serialization=0.23ms
 -> All Unseen Scenarios Schema & Firewall Valid: True (12/12)
 ```
 
