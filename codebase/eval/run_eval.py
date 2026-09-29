@@ -96,7 +96,9 @@ def run_evaluation():
 
             dl_res = check_deeplink_resolution(data, valid_catalog_uris, valid_validation_uris)
             results["canonical"]["dl_catalog"] += dl_res["catalog_matches"]
-            results["canonical"]["dl_dummy"] += dl_res["dummy_positive"]
+            results["canonical"].setdefault("dl_validation", 0)
+            results["canonical"]["dl_validation"] += dl_res["validation_matches"]
+            results["canonical"]["dl_dummy"] += dl_res["dummy_positive_candidates"]
             results["canonical"]["dl_invalid"] += dl_res["invalid_attempts"]
 
     # 2. Paraphrased Dataset
@@ -237,7 +239,7 @@ def run_evaluation():
         "deeplink_resolution": {
             "catalog_matches": results["canonical"]["dl_catalog"],
             "validation_matches": results["canonical"]["dl_validation"] if "dl_validation" in results["canonical"] else 0,
-            "dummy_positives": results["canonical"]["dl_dummy"],
+            "dummy_positive_candidates": results["canonical"]["dl_dummy"],
             "invalid_attempts": results["canonical"]["dl_invalid"]
         },
         "adversarial_safety": {

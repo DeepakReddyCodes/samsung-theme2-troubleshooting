@@ -57,15 +57,16 @@ def check_action_validity(response_data: Dict[str, Any]) -> Dict[str, Any]:
 
 def check_deeplink_resolution(response_data: Dict[str, Any], valid_catalog_uris: set, valid_validation_uris: set) -> Dict[str, Any]:
     """
-    Measures exact catalog URI resolution, validation URIs, dummy_positive usage, and invalid URIs.
+    Measures exact catalog URI resolution, validation URIs, dummy-positive candidates, and invalid URIs.
+    Distinguishes verification from mere plausibility.
     """
     contexts = response_data.get("contexts", [])
     if not contexts:
-        return {"catalog_matches": 0, "validation_matches": 0, "dummy_positive": 0, "invalid_attempts": 0}
+        return {"catalog_matches": 0, "validation_matches": 0, "dummy_positive_candidates": 0, "invalid_attempts": 0}
 
     catalog_matches = 0
     validation_matches = 0
-    dummy_positives = 0
+    dummy_positive_candidates = 0
     invalid_attempts = 0
 
     for act in contexts[0].get("actions", []):
@@ -79,13 +80,17 @@ def check_deeplink_resolution(response_data: Dict[str, Any], valid_catalog_uris:
                 if uri in valid_catalog_uris:
                     catalog_matches += 1
                 elif uri.startswith("bixby://dummy_positive"):
-                    # Check for explicit target definition in description to classify as a valid fallback attempt
-                    desc = dl_obj.get("description", "")
-                    if len(desc.split()) >= 3:
-                        dummy_positives += 1
+                    # We cannot establish end-to-end provenance from the JSON alone.
+                    # We classify this as a candidate ONLY if it possesses at least some descriptive text,
+                    # but we explicitly do NOT claim it is verified or correct.
+                    # If it lacks a description entirely, it is definitively malformed.
+                    desc = dl_obj.get("description", "").strip()
+                    if desc:
+                        dummy_positive_candidates += 1
                     else:
-                        invalid_attempts += 1 # Invalid if no specific concrete target is described
+                        invalid_attempts += 1
                 else:
+                    # Non-catalog URIs or generic invalid formats fall here
                     invalid_attempts += 1
 
             # Validation DeepLink
@@ -99,7 +104,7 @@ def check_deeplink_resolution(response_data: Dict[str, Any], valid_catalog_uris:
     return {
         "catalog_matches": catalog_matches,
         "validation_matches": validation_matches,
-        "dummy_positive": dummy_positives,
+        "dummy_positive_candidates": dummy_positive_candidates,
         "invalid_attempts": invalid_attempts
     }
 
