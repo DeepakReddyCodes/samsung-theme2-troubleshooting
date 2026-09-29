@@ -68,13 +68,13 @@ jobs:
         working-directory: codebase/frontend
         run: |
           npm ci
+          
+      - name: Build frontend
+        working-directory: codebase/frontend
+        run: |
+          npm run build
 
       - name: Run frontend tests
         working-directory: codebase/frontend
         run: |
           npm test
-
-      - name: Build frontend
-        working-directory: codebase/frontend
-        run: |
-          npm run build
