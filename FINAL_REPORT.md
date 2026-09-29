@@ -1,6 +1,8 @@
 # W02 Grounded Extraction Final Report
 
-**Commit SHA:** d0b85c8037105b22bd655d94b7d4a3a150400076
+**Implementation Commit SHA:** e501be5e8cfec473347b99c017d2a559e86dd997
+*(Note: This SHA points to the implementation commit. This current report-only commit contains the documentation update reflecting the final state.)*
+
 **Base SHA:** bf10432406fc7d28db210c9ea43061f61b867640
 
 **Files Changed:**
