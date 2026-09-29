@@ -32,30 +32,60 @@ class QueryEnricher:
             r"(?i)\b(please|tell me|how do i|how to|i want to|can you|help me|hi|hello|hey|thanks)\b"
         )
 
-        # Exact explicit operations for polarity
-        self.enable_keywords = {"enable", "turn on", "activate"}
-        self.disable_keywords = {"disable", "turn off", "deactivate"}
+        # Contraction normalization before punctuation removal
+        self.contractions_map = {
+            r"(?i)\bdon't\b": "do not",
+            r"(?i)\bdoesn't\b": "does not",
+            r"(?i)\bcan't\b": "cannot",
+            r"(?i)\bwon't\b": "will not",
+            r"(?i)\bshouldn't\b": "should not",
+            r"(?i)\bwouldn't\b": "would not",
+            r"(?i)\bcouldn't\b": "could not",
+            r"(?i)\baren't\b": "are not",
+            r"(?i)\bisn't\b": "is not",
+        }
 
-        # Explicit negation phrases
-        self.negation_phrases = {"do not", "don t", "dont", "do nt"}
+        # Exact explicit operations for polarity scoped by word boundaries
+        enable_terms = ["enable", "turn on", "activate"]
+        disable_terms = ["disable", "turn off", "deactivate"]
+
+        self.enable_regex = re.compile(rf"\b({'|'.join(enable_terms)})\b")
+        self.disable_regex = re.compile(rf"\b({'|'.join(disable_terms)})\b")
+
+        # Negation matcher bound to operations
+        self.negation_enable_regex = re.compile(rf"\b(?:do not|cannot|will not|does not)\s+(?:{'|'.join(enable_terms)})\b")
+        self.negation_disable_regex = re.compile(rf"\b(?:do not|cannot|will not|does not)\s+(?:{'|'.join(disable_terms)})\b")
 
         # Entities
         self.entity_keywords = {"backup", "restore", "reset", "lock", "unlock"}
 
     def _determine_polarity(self, text: str) -> str:
-        """Deterministically determine polarity, handling negations correctly."""
-        has_enable = any(kw in text for kw in self.enable_keywords)
-        has_disable = any(kw in text for kw in self.disable_keywords)
-        has_negation = any(phrase in text for phrase in self.negation_phrases)
+        """Deterministically determine polarity using token-bounded operations and local scoped negation."""
+        has_negated_enable = bool(self.negation_enable_regex.search(text))
+        has_negated_disable = bool(self.negation_disable_regex.search(text))
 
-        # Do not confidently guess if both are somehow present
-        if has_enable and has_disable:
+        # Remove negated phrases from the text to check for unnegated operations safely
+        # We don't modify the actual query text passed outwards, only for this local check
+        reduced_text = self.negation_enable_regex.sub("", text)
+        reduced_text = self.negation_disable_regex.sub("", reduced_text)
+
+        has_enable = bool(self.enable_regex.search(reduced_text))
+        has_disable = bool(self.disable_regex.search(reduced_text))
+
+        # Count total operations found
+        total_ops = sum([has_enable, has_disable, has_negated_enable, has_negated_disable])
+
+        # If more than one conflicting intent is detected, fall back to neutral
+        if total_ops > 1:
             return "neutral"
-
+        if has_negated_enable:
+            return "negated_enable"
+        if has_negated_disable:
+            return "negated_disable"
         if has_enable:
-            return "negated_enable" if has_negation else "enable"
+            return "enable"
         if has_disable:
-            return "negated_disable" if has_negation else "disable"
+            return "disable"
 
         return "neutral"
 
@@ -67,8 +97,13 @@ class QueryEnricher:
         # Truncate at 1024 chars for safety against pathological inputs
         query = query[:1024]
 
+        # Expand contractions safely before any punctuation stripping
+        cleaned = query
+        for pat, rep in self.contractions_map.items():
+            cleaned = re.sub(pat, rep, cleaned)
+
         # Strip conversational noise
-        cleaned = self.noise_regex.sub("", query).strip()
+        cleaned = self.noise_regex.sub("", cleaned).strip()
 
         # Remove leading numbering like '1. ', '1. "', '2. '
         cleaned = re.sub(r"^\d+[\.\)]\s*[\"']?", "", cleaned)
@@ -80,8 +115,8 @@ class QueryEnricher:
         for pat, rep in COMPOUND_MAP.items():
             cleaned = re.sub(pat, rep, cleaned)
 
-        # Replace punctuation with spaces to safely check for negations without apostrophes (don't -> don t)
-        cleaned = re.sub(r"[^\w\s]", " ", cleaned)
+        # Replace punctuation with spaces to safely check words
+        cleaned = re.sub(r"[^\w\s-]", " ", cleaned)
         # Collapse multiple whitespaces
         cleaned = re.sub(r"\s+", " ", cleaned).strip()
 

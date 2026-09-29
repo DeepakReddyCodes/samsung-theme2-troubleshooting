@@ -32,6 +32,9 @@ def test_negation_preservation():
     q3 = "do not disable wifi"
     assert enricher.enrich(q3).polarity == "negated_disable"
 
+    q4 = "won't turn off wifi"
+    assert enricher.enrich(q4).polarity == "negated_disable"
+
 def test_ambiguous_operations_are_neutral():
     enricher = QueryEnricher()
     # Explicit requirements: add, remove, start, stop should NOT blindly trigger enable/disable
@@ -39,6 +42,15 @@ def test_ambiguous_operations_are_neutral():
     assert enricher.enrich("remove a wi-fi network").polarity == "neutral"
     assert enricher.enrich("start wi-fi scanning").polarity == "neutral"
     assert enricher.enrich("stop wi-fi scanning").polarity == "neutral"
+
+    # Substring matches should not trigger
+    assert enricher.enrich("enablement").polarity == "neutral"
+
+def test_conflicting_operations():
+    enricher = QueryEnricher()
+    q = "enable and disable wifi"
+    res = enricher.enrich(q)
+    assert res.polarity == "neutral"
 
 def test_determinism():
     enricher = QueryEnricher()
