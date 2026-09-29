@@ -60,7 +60,7 @@ class ColdPathExtractionEngine:
     ) -> Tuple[str, str]:
         """Normalize SIIS input into clean (title, content) tuple."""
         if not siis_response:
-            return "General Device Support", "Check Samsung device settings and restart phone if needed."
+            return "", ""
 
         if isinstance(siis_response, dict):
             title = str(siis_response.get("title", "")).strip() or "Device Support"
@@ -153,31 +153,9 @@ class ColdPathExtractionEngine:
                 )
             )
 
-        # If no actions survived grounding, fallback to grounded overview
+        # If no actions survived grounding, return empty response
         if not built_actions:
-            fallback_steps, _ = self.grounding_checker.filter_grounded_steps(
-                steps=["Navigate to and open device Settings.", f"Check {topic} configuration."],
-                siis_text=f"{siis_title}\n{siis_content}",
-            )
-            if not fallback_steps:
-                lines = [l.strip() for l in siis_content.split("\n") if l.strip()]
-                first_line = lines[0] if lines else "Check device settings and configurations."
-                fallback_steps = [first_line[:100].rstrip(".") + "."]
-
-            built_actions.append(
-                Action(
-                    actionName=f"Check {topic} Settings",
-                    description=f"It will configure your {topic.lower()} settings",
-                    category=actionCategory.manual,
-                    stepGroups=[
-                        StepGroup(
-                            steps=[sanitize_text(s) for s in fallback_steps],
-                            actionableDeeplink=None,
-                            validationDeeplink=None,
-                        )
-                    ],
-                )
-            )
+            return ContextDeeplinkResponse(contexts=[])
 
         # 4. Sort Actions strictly: auto -> manual -> critical
         built_actions.sort(
