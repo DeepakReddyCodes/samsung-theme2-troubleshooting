@@ -48,37 +48,45 @@ class QueryEnricher:
         }
 
         # Exact explicit operations for polarity scoped by word boundaries
-        enable_terms = ["enable", "turn on", "activate"]
-        disable_terms = ["disable", "turn off", "deactivate"]
+        self.enable_terms = ["enable", "turn on", "activate"]
+        self.disable_terms = ["disable", "turn off", "deactivate"]
 
-        self.enable_regex = re.compile(rf"\b({'|'.join(enable_terms)})\b")
-        self.disable_regex = re.compile(rf"\b({'|'.join(disable_terms)})\b")
+        self.enable_regex = re.compile(rf"\b({'|'.join(self.enable_terms)})\b")
+        self.disable_regex = re.compile(rf"\b({'|'.join(self.disable_terms)})\b")
 
         # Negation matcher bound to operations
         # Differentiating between problem/failure semantics ("cannot", "will not") and active negations ("do not")
-        problem_prefixes = ["cannot", "will not", "does not", "can not"]
-        negation_prefixes = ["do not"]
+        self.problem_prefixes = ["cannot", "will not", "does not", "can not", "won t", "can t", "cannot be", "can not be", "will not be"]
+        self.negation_prefixes = ["do not", "don t"]
 
-        self.problem_enable_regex = re.compile(rf"\b(?:{'|'.join(problem_prefixes)})\s+(?:{'|'.join(enable_terms)})\b")
-        self.problem_disable_regex = re.compile(rf"\b(?:{'|'.join(problem_prefixes)})\s+(?:{'|'.join(disable_terms)})\b")
+        self.problem_enable_regex = re.compile(rf"\b(?:{'|'.join(self.problem_prefixes)})\s+(?:{'|'.join(self.enable_terms)})\b")
+        self.problem_disable_regex = re.compile(rf"\b(?:{'|'.join(self.problem_prefixes)})\s+(?:{'|'.join(self.disable_terms)})\b")
 
-        self.negation_enable_regex = re.compile(rf"\b(?:{'|'.join(negation_prefixes)})\s+(?:{'|'.join(enable_terms)})\b")
-        self.negation_disable_regex = re.compile(rf"\b(?:{'|'.join(negation_prefixes)})\s+(?:{'|'.join(disable_terms)})\b")
+        self.negation_enable_regex = re.compile(rf"\b(?:{'|'.join(self.negation_prefixes)})\s+(?:{'|'.join(self.enable_terms)})\b")
+        self.negation_disable_regex = re.compile(rf"\b(?:{'|'.join(self.negation_prefixes)})\s+(?:{'|'.join(self.disable_terms)})\b")
+
+        # Extra pattern to catch "wifi cannot be enabled"
+        # We look for term + problem prefix + enable word (with optional 'd')
+        # E.g., "wifi cannot be enabled" -> problem enable
+        self.problem_postfix_enable_regex = re.compile(rf"\b(?:{'|'.join(self.problem_prefixes)})\s+(?:{'|'.join([t+'d' for t in self.enable_terms] + self.enable_terms)})\b")
+        self.problem_postfix_disable_regex = re.compile(rf"\b(?:{'|'.join(self.problem_prefixes)})\s+(?:{'|'.join([t+'d' for t in self.disable_terms] + self.disable_terms)})\b")
 
         # Entities
         self.entity_keywords = {"backup", "restore", "reset", "lock", "unlock"}
 
     def _determine_polarity(self, text: str) -> str:
         """Deterministically determine polarity using token-bounded operations and local scoped negation."""
-        has_problem_enable = bool(self.problem_enable_regex.search(text))
-        has_problem_disable = bool(self.problem_disable_regex.search(text))
+        has_problem_enable = bool(self.problem_enable_regex.search(text)) or bool(self.problem_postfix_enable_regex.search(text))
+        has_problem_disable = bool(self.problem_disable_regex.search(text)) or bool(self.problem_postfix_disable_regex.search(text))
         has_negated_enable = bool(self.negation_enable_regex.search(text))
         has_negated_disable = bool(self.negation_disable_regex.search(text))
 
         # Remove negated phrases from the text to check for unnegated operations safely
         # We don't modify the actual query text passed outwards, only for this local check
         reduced_text = self.problem_enable_regex.sub("", text)
+        reduced_text = self.problem_postfix_enable_regex.sub("", reduced_text)
         reduced_text = self.problem_disable_regex.sub("", reduced_text)
+        reduced_text = self.problem_postfix_disable_regex.sub("", reduced_text)
         reduced_text = self.negation_enable_regex.sub("", reduced_text)
         reduced_text = self.negation_disable_regex.sub("", reduced_text)
 
@@ -173,27 +181,50 @@ class QueryEnricher:
         # Intent Candidates (Operation + Contextual Target)
         intent_candidates = []
 
-        # Determine actual operations present regardless of final resolved polarity
-        ops_present = set()
-
-        if self.enable_regex.search(cleaned) or self.problem_enable_regex.search(cleaned) or self.negation_enable_regex.search(cleaned):
-            ops_present.add("enable")
-        if self.disable_regex.search(cleaned) or self.problem_disable_regex.search(cleaned) or self.negation_disable_regex.search(cleaned):
-            ops_present.add("disable")
-
-        # Combine detected operations with technical targets
+        # Deterministic phrase-scoped operation parsing by chunks
+        # We split by 'and', 'but', ',', '.' to evaluate operations locally and preserve pairings.
+        chunks = re.split(r'\band\b|\bbut\b|,|\.', cleaned)
         targets = [t for t in technical_terms if t not in self.entity_keywords]
-        for op in ops_present:
-            if targets:
-                for t in targets:
-                    intent_candidates.append(f"{op} {t}")
-            else:
-                intent_candidates.append(op)
+
+        last_op = None
+        for chunk in chunks:
+            chunk = chunk.strip()
+            if not chunk: continue
+
+            # Find operation in this chunk
+            op = None
+            if self.enable_regex.search(chunk) or self.problem_enable_regex.search(chunk) or self.negation_enable_regex.search(chunk) or self.problem_postfix_enable_regex.search(chunk):
+                op = "enable"
+            elif self.disable_regex.search(chunk) or self.problem_disable_regex.search(chunk) or self.negation_disable_regex.search(chunk) or self.problem_postfix_disable_regex.search(chunk):
+                op = "disable"
+
+            if op:
+                last_op = op
+
+            # If we don't have an op in this chunk but had one in the previous, carry it over if there's a target
+            # e.g., "enable smart switch and wifi" -> "enable smart switch", "enable wifi"
+            current_op = op if op else last_op
+
+            if current_op:
+                chunk_targets = [t for t in targets if t in chunk]
+                if chunk_targets:
+                    for t in chunk_targets:
+                        intent_candidates.append(f"{current_op} {t}")
+                elif op:
+                    # If there's an explicit op but no target in this chunk,
+                    # check if the whole query has exactly 1 target.
+                    if len(targets) == 1:
+                        intent_candidates.append(f"{op} {targets[0]}")
+                    elif not targets:
+                        intent_candidates.append(op)
 
         # Append standalone action intents (e.g. reset, restore)
         for kw in ["reset", "restore", "backup", "lock", "unlock"]:
             if kw in entities:
                 intent_candidates.append(kw)
+
+        # Ensure candidates are unique
+        intent_candidates = list(set(intent_candidates))
 
         # Fallback if no specific intents found and polarity isn't neutral
         if not intent_candidates and polarity not in {"neutral", "problem"}:

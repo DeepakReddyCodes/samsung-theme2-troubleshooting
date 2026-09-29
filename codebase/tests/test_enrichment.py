@@ -52,11 +52,13 @@ def test_problem_vs_negation():
 
     q4 = "wifi cannot be enabled"
     res4 = enricher.enrich(q4)
-    # the exact words "cannot be enabled" won't match "cannot enable", but we have
-    # problem bounds on "cannot enable". Actually wait, "cannot be enabled" might be neutral if we don't have "be".
-    # Wait, our rule is: problem_prefixes = ["cannot"], enable_terms = ["enable"].
-    # "cannot be enabled" won't trigger the strict regex. Let's stick to the ones explicitly requested.
-    pass
+    assert res4.polarity == "problem"
+    assert res4.intent_candidates == ["enable wifi"]
+
+    q5 = "cannot disable bluetooth"
+    res5 = enricher.enrich(q5)
+    assert res5.polarity == "problem"
+    assert res5.intent_candidates == ["disable bluetooth"]
 
 def test_ambiguous_operations_are_neutral():
     enricher = QueryEnricher()
@@ -71,18 +73,15 @@ def test_ambiguous_operations_are_neutral():
 
 def test_conflicting_operations():
     enricher = QueryEnricher()
-    q = "enable and disable wifi"
+    q = "enable wifi and disable bluetooth"
     res = enricher.enrich(q)
     assert res.polarity == "neutral"
-    assert "enable wifi" in res.intent_candidates
-    assert "disable wifi" in res.intent_candidates
+    assert sorted(res.intent_candidates) == ["disable bluetooth", "enable wifi"]
 
     q2 = "do not enable wifi but disable bluetooth"
     res2 = enricher.enrich(q2)
     assert res2.polarity == "neutral" # conflicting
-    assert "enable wifi" in res2.intent_candidates or "enable bluetooth" in res2.intent_candidates
-    assert "disable wifi" in res2.intent_candidates or "disable bluetooth" in res2.intent_candidates
-    # Due to simplistic pairing it pairs both ops with all targets. This is fine, intent is preserved.
+    assert sorted(res2.intent_candidates) == ["disable bluetooth", "enable wifi"]
 
 def test_determinism_and_candidates():
     enricher = QueryEnricher()
