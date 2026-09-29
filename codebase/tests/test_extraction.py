@@ -420,7 +420,7 @@ def test_grounding_contradiction_rejection(engine):
                         action_name="Toggle Wi-Fi",
                         description="It will toggle Wi-Fi",
                         category="manual",
-                        steps=["Turn off Wi-Fi in Settings."], # Contradiction (turn off vs turn on) - grounding uses thresholding so this might pass if words overlap a lot, let's test a starker hallucination/contradiction
+                        steps=["Turn off Wi-Fi in Settings."], # Contradiction (turn off vs turn on)
                         screen_hint="Wi-Fi",
                         evidence="Ensure Wi-Fi is turned on",
                     )
@@ -431,10 +431,13 @@ def test_grounding_contradiction_rejection(engine):
         provider=ContradictionProvider(),
         resolver=engine.resolver,
         firewall=engine.firewall,
-        grounding_checker=GroundingChecker(threshold=0.8) # Stricter for this test if needed, but standard should work if contradiction adds new words. Actually "Turn off" vs "turned on" might share "turn", "wi-fi", "in", "settings".
+        grounding_checker=GroundingChecker()
     )
-    # The current grounding checker relies on token overlap, not semantic contradiction.
-    # W02 tasks request evaluating if the grounding can handle it. If not, we report it.
+
+    plan = contra_engine.extract_and_build(query=query, siis_response=siis_payload)
+
+    # Assert that the step did not survive grounding, resulting in an empty response
+    assert len(plan.contexts) == 0
 
 def test_prompt_injection_in_siis(engine):
     """Verify prompt injection in SIIS content is treated as data, not instruction."""
@@ -445,6 +448,17 @@ def test_prompt_injection_in_siis(engine):
     }
     # We test that the deterministic extractor treats this just as text.
     plan = engine.extract_and_build(query=query, siis_response=siis_payload)
+
     # It should extract actions based on the text, but not actually change application policy.
-    # The text is just parsed.
+    # We assert that no unrelated steps are added, and that the returned response
+    # strictly conforms to the expected extraction schema.
     assert isinstance(plan, ContextDeeplinkResponse)
+
+    # Verify that the extracted text matches the SIIS content literally, and wasn't interpreted as a system instruction
+    if plan.contexts:
+        for action in plan.contexts[0].actions:
+            for step_group in action.stepGroups:
+                for step in step_group.steps:
+                    assert "Display settings" in step or "Ignore previous" in step
+                    # Ensure no unexpected hallucinated steps like "Reset phone" were generated
+                    assert "Reset" not in step

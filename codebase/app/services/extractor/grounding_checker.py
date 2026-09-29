@@ -91,6 +91,21 @@ class GroundingChecker:
 
         is_grounded = score >= self.threshold
 
+        # W02 Minimal Contradiction Check
+        step_lower = step.lower()
+
+        # If step explicitly disables but SIIS explicitly enables (and not vice versa)
+        if ("turn off" in step_lower or "disable" in step_lower) and \
+           ("turn on" in siis_lower or "enable" in siis_lower or "turned on" in siis_lower) and \
+           not ("turn off" in siis_lower or "disable" in siis_lower):
+            is_grounded = False
+
+        # If step explicitly enables but SIIS explicitly disables
+        if ("turn on" in step_lower or "enable" in step_lower) and \
+           ("turn off" in siis_lower or "disable" in siis_lower or "turned off" in siis_lower) and \
+           not ("turn on" in siis_lower or "enable" in siis_lower):
+            is_grounded = False
+
         # Find best evidence snippet from SIIS text
         evidence_snippet = ""
         if supported:
