@@ -392,6 +392,9 @@ def run_benchmark():
             cache_hit = resp.headers.get("X-Cache-Hit", "false").lower() == "true"
             cache_type = resp.headers.get("X-Cache-Type", "none")
             ext_path = resp.headers.get("X-Extraction-Path", "unknown")
+            cache_time_ms = float(resp.headers.get("X-Cache-Time-Ms", "0"))
+            extract_time_ms = float(resp.headers.get("X-Extract-Time-Ms", "0"))
+            serialize_time_ms = float(resp.headers.get("X-Serialize-Time-Ms", "0"))
     
             body = resp.json()
             # Parse through schema and validate with firewall
@@ -409,6 +412,9 @@ def run_benchmark():
                 "extraction_path": ext_path,
                 "server_latency_ms": round(proc_time_ms, 2),
                 "http_latency_ms": round(t_http, 2),
+                "cache_time_ms": round(cache_time_ms, 2),
+                "extract_time_ms": round(extract_time_ms, 2),
+                "serialize_time_ms": round(serialize_time_ms, 2),
                 "valid": len(errors) == 0,
                 "errors": errors,
                 "goal": parsed_obj.contexts[0].goal,
@@ -421,7 +427,22 @@ def run_benchmark():
         p95_unseen = percentile(unseen_latencies, 95)
         p99_unseen = percentile(unseen_latencies, 99)
         unseen_all_valid = all(r["valid"] for r in unseen_records)
+        # We can extract average component latency from unseen records if desired, but we will keep it simple here.
+        # We will parse headers for component latencies.
+        extract_times = []
+        cache_times = []
+        serialize_times = []
+        for r in unseen_records:
+            extract_times.append(r.get("extract_time_ms", 0.0))
+            cache_times.append(r.get("cache_time_ms", 0.0))
+            serialize_times.append(r.get("serialize_time_ms", 0.0))
+
+        p50_extract = percentile(extract_times, 50)
+        p50_cache = percentile(cache_times, 50)
+        p50_serialize = percentile(serialize_times, 50)
+
         print(f"-> Unseen Scenarios P50={p50_unseen:.2f}ms | P95={p95_unseen:.2f}ms | P99={p99_unseen:.2f}ms")
+        print(f"   - Component P50s: Cache={p50_cache:.2f}ms | Extraction={p50_extract:.2f}ms | Serialization={p50_serialize:.2f}ms")
         print(f"-> All Unseen Scenarios Schema & Firewall Valid: {unseen_all_valid} ({len(unseen_records)}/{len(unseen_records)})")
     
     # ------------------------------------------------------------------------

@@ -196,32 +196,48 @@ async def troubleshoot(
     }
 
     # 1. Tier 1 / Tier 2 Cache Lookup
+    t_cache_start = time.perf_counter()
     cached_plan, telemetry = app_state.cache.get(
         query=request.query,
         siis_response=siis_dict,
     )
+    t_cache_end = time.perf_counter()
+    cache_lookup_ms = (t_cache_end - t_cache_start) * 1000.0
 
     if cached_plan is not None:
         # Constraint: Cached responses must ALWAYS pass ValidationFirewall before returning
+        t_serialize_start = time.perf_counter()
         validated_plan, errors = app_state.firewall.validate_response(cached_plan, allow_repair=True)
+        t_serialize_end = time.perf_counter()
+        serialize_ms = (t_serialize_end - t_serialize_start) * 1000.0
+
         if not errors:
             process_ms = (time.perf_counter() - t0) * 1000.0
             response.headers["X-Process-Time-Ms"] = f"{process_ms:.3f}"
             response.headers["X-Cache-Hit"] = "true"
             response.headers["X-Cache-Type"] = telemetry.get("hit_type", "exact")
             response.headers["X-Extraction-Path"] = "cache"
+            response.headers["X-Cache-Time-Ms"] = f"{cache_lookup_ms:.3f}"
+            response.headers["X-Extract-Time-Ms"] = "0.000"
+            response.headers["X-Serialize-Time-Ms"] = f"{serialize_ms:.3f}"
             return validated_plan
         else:
             logger.warning(f"Cached plan failed validation ({errors}). Routing to cold extraction.")
 
     # 2. Cold-Path Knowledge Extraction on Miss
+    t_extract_start = time.perf_counter()
     extracted_plan = app_state.cold_engine.extract_and_build(
         query=request.query,
         siis_response=siis_dict,
     )
+    t_extract_end = time.perf_counter()
+    extract_ms = (t_extract_end - t_extract_start) * 1000.0
 
     # Constraint: Cold-path responses must ALWAYS pass ValidationFirewall before returning
+    t_serialize_start = time.perf_counter()
     final_plan, errors = app_state.firewall.validate_response(extracted_plan, allow_repair=True)
+    t_serialize_end = time.perf_counter()
+    serialize_ms = (t_serialize_end - t_serialize_start) * 1000.0
     if errors:
         logger.error(f"Cold-path extraction produced residual validation errors: {errors}")
 
@@ -230,6 +246,9 @@ async def troubleshoot(
     response.headers["X-Cache-Hit"] = "false"
     response.headers["X-Cache-Type"] = "miss"
     response.headers["X-Extraction-Path"] = "cold_path"
+    response.headers["X-Cache-Time-Ms"] = f"{cache_lookup_ms:.3f}"
+    response.headers["X-Extract-Time-Ms"] = f"{extract_ms:.3f}"
+    response.headers["X-Serialize-Time-Ms"] = f"{serialize_ms:.3f}"
 
     return final_plan
 
