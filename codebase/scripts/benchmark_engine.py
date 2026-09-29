@@ -12,6 +12,7 @@ import json
 import math
 import os
 from pathlib import Path
+import platform
 import re
 import sys
 import time
@@ -224,10 +225,31 @@ def percentile(data: List[float], p: float) -> float:
     return d0 + d1
 
 
+def get_system_metadata() -> Dict[str, Any]:
+    """Capture benchmark execution environment and configuration metadata."""
+    import fastapi
+    import pydantic
+
+    return {
+        "operating_system": platform.system() + " " + platform.release(),
+        "python_version": platform.python_version(),
+        "fastapi_version": fastapi.__version__,
+        "pydantic_version": pydantic.__version__,
+        "benchmark_mode": "offline_deterministic",
+        "provider": "DeterministicFallbackExtractor (Mock)",
+        "models_loaded": "SentenceTransformer (MiniLM-L6-v2) for cache",
+        "llm_called": False,
+        "state": "Pre-warmed cache available"
+    }
+
 def run_benchmark():
+    metadata = get_system_metadata()
+
     print("=" * 80)
-    print("SAMSUNG PRISM THEME 2 — ENGINEERING BENCHMARK SUITE")
+    print("SAMSUNG PRISM THEME 2 — W07 ENGINEERING BENCHMARK SUITE")
     print("=" * 80)
+    print(f"OS: {metadata['operating_system']} | Python: {metadata['python_version']}")
+    print(f"Mode: {metadata['benchmark_mode']} | Provider: {metadata['provider']}")
     print("NOTE: Cold path extraction in this execution mode uses")
     print("deterministic/offline extraction. It does not represent")
     print("production LLM (e.g. Gemini/OpenAI) latency.")
@@ -246,7 +268,7 @@ def run_benchmark():
         health_data = health_resp.json()
         assert health_data["status"] == "ok"
 
-        print(f"-> Startup & Prewarming Duration: {startup_duration:.3f} s (Engineering Startup Target: <= 8.0 s)")
+        print(f"-> Startup & Prewarming Duration: {startup_duration:.3f} s (W07 Engineering Performance Target: <= 8.0 s)")
         startup_gate_pass = startup_duration <= 8.0
         print(f"-> Startup Gate: {'PASS' if startup_gate_pass else 'FAIL'}")
 
@@ -305,7 +327,7 @@ def run_benchmark():
         p99_repeat_http = percentile(repeat_http_latencies, 99)
     
         print(f"-> Total Executions: {total_repeats}")
-        print(f"-> Repeat Cache Hit Rate: {repeat_hit_rate:.2f}% (Engineering Target: >= 90%)")
+        print(f"-> Repeat Cache Hit Rate: {repeat_hit_rate:.2f}% (W07 Engineering Performance Target: >= 90%)")
         print(f"-> Server Latency: P50={p50_repeat_server:.2f}ms | P95={p95_repeat_server:.2f}ms | P99={p99_repeat_server:.2f}ms")
         print(f"-> End-to-End HTTP: P50={p50_repeat_http:.2f}ms | P95={p95_repeat_http:.2f}ms | P99={p99_repeat_http:.2f}ms")
         repeat_hit_gate_pass = repeat_hit_rate >= 90.0
@@ -365,7 +387,7 @@ def run_benchmark():
         p99_para_http = percentile(para_http_latencies, 99)
     
         print(f"-> Total Paraphrases Tested: {total_paras}")
-        print(f"-> Paraphrase Cache Hit Rate: {para_hit_rate:.2f}% (Engineering Target: >= 80%)")
+        print(f"-> Paraphrase Cache Hit Rate: {para_hit_rate:.2f}% (W07 Engineering Performance Target: >= 80%)")
         print(f"   - Semantic Hits: {para_semantic_hits} ({para_semantic_hits/total_paras*100:.1f}%)")
         print(f"   - Exact Hits: {para_exact_hits} ({para_exact_hits/total_paras*100:.1f}%)")
         print(f"-> Server Latency: P50={p50_para_server:.2f}ms | P95={p95_para_server:.2f}ms | P99={p99_para_server:.2f}ms")
@@ -622,6 +644,7 @@ def run_benchmark():
     # Compile and return full benchmark summary
     # ------------------------------------------------------------------------
     summary = {
+        "metadata": metadata,
         "startup": {
             "duration_s": round(startup_duration, 4),
             "gate_pass": startup_gate_pass,

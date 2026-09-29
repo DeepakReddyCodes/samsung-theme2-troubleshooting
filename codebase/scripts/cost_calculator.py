@@ -2,6 +2,14 @@ import argparse
 import sys
 
 def calculate_cost(input_tokens_per_req, output_tokens_per_req, requests_per_month, price_per_1m_input, price_per_1m_output, cache_hit_rate=0.0):
+    """
+    Calculates estimated LLM API token costs per query and extrapolated monthly API costs.
+
+    Assumptions explicitly modeled:
+    - Cache hits result in 0 external LLM API tokens used.
+    - Infrastructure, database, and operational costs are NOT included.
+    - Pricing is configurable and strictly illustrative.
+    """
     if input_tokens_per_req < 0:
         raise ValueError("Input tokens per request must be >= 0")
     if output_tokens_per_req < 0:
@@ -81,9 +89,12 @@ def main():
     print(f"  Monthly API Cost (With Cache) : ${result['monthly_cost_with_cache']:,.2f}")
     print(f"  Monthly API Savings via Cache : ${result['monthly_savings_with_cache']:,.2f}")
     print("-" * 50)
-    print("Note: Estimates assume cache hits consume 0 LLM API tokens.")
-    print("This calculator models API costs only and does not include ")
-    print("infrastructure, operational, or database costs.")
+    print("Assumptions & Disclaimers:")
+    print(" - This is an engineering benchmark tool.")
+    print(" - Estimates assume cache hits consume exactly 0 LLM API tokens.")
+    print(" - This calculator models API token costs ONLY.")
+    print(" - Infrastructure, operational, hosting, and database costs are explicitly NOT included.")
+    print(" - Prices provided are illustrative only and not Samsung official pricing.")
     print("==================================================")
 
 if __name__ == "__main__":
