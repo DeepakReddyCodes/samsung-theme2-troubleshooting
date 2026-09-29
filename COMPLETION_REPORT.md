@@ -4,8 +4,8 @@
 `feature/w08-frontend-demo`
 
 ## 2. Files Changed
-* `codebase/frontend/index.html`: Added the required text "SmartGuide" to the `#root` div for integration tests.
-* `codebase/frontend/tests/frontend.test.mjs`: Updated the test assertion to expect the modified `#root` div content.
+* `codebase/frontend/index.html`: Reverted the invalid root mount point modification.
+* `codebase/frontend/tests/frontend.test.mjs`: Restored test assertion to validate the original empty root node.
 * Built frontend assets (`dist/index.html`, `dist/assets/*`).
 
 ## 3. UI Features Implemented
@@ -36,4 +36,4 @@ The UI successfully fulfills all required demonstration capabilities:
 * The demo effectively highlights the one-tap troubleshooting flow. A user can select benchmark scenarios, input query details, view the SIIS grounding context, and launch mocked settings directly from the result panel.
 
 ## 8. Deferred Backend-Dependent Work
-* NBE (Next Best Experience) / EIG (Experience Ideation Guide) features are purposefully omitted from the frontend per W08 rules until the API contract formally supports them.
+* NBE (Next-Best-Evidence) / EIG (Expected Information Gain) features are purposefully omitted from the frontend per W08 rules until the API contract formally supports them.
