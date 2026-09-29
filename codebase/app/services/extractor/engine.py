@@ -33,6 +33,7 @@ from app.services.extractor.base import ExtractedAction, ILLMProvider, Intermedi
 from app.services.extractor.deterministic_extractor import DeterministicFallbackExtractor
 from app.services.extractor.gemini_extractor import GeminiExtractor
 from app.services.extractor.grounding_checker import GroundingChecker
+from app.services.enrichment.enricher import QueryEnricher
 
 logger = logging.getLogger(__name__)
 
@@ -47,12 +48,14 @@ class ColdPathExtractionEngine:
         firewall: Optional[ValidationFirewall] = None,
         cache: Optional[FastPathSemanticCache] = None,
         grounding_checker: Optional[GroundingChecker] = None,
+        enricher: Optional[QueryEnricher] = None,
     ):
         self.provider = provider or GeminiExtractor(fallback=DeterministicFallbackExtractor())
         self.resolver = resolver or DeeplinkResolver()
         self.firewall = firewall or ValidationFirewall()
         self.cache = cache
         self.grounding_checker = grounding_checker or GroundingChecker()
+        self.enricher = enricher or QueryEnricher()
 
     def _normalize_siis_payload(
         self,
@@ -84,9 +87,12 @@ class ColdPathExtractionEngine:
         """Execute full cold-path extraction, grounding verification, and validation."""
         siis_title, siis_content = self._normalize_siis_payload(siis_response)
 
+        # 0. Enrich and normalize the raw query
+        enriched_query = self.enricher.enrich(query)
+
         # 1. Extract intermediate intent via active provider
         intermediate: IntermediateIntent = self.provider.extract(
-            query=query,
+            query=enriched_query.normalized_query,
             siis_title=siis_title,
             siis_content=siis_content,
         )
@@ -153,31 +159,9 @@ class ColdPathExtractionEngine:
                 )
             )
 
-        # If no actions survived grounding, fallback to grounded overview
+        # If no actions survived grounding, strictly do not invent fallback facts.
         if not built_actions:
-            fallback_steps, _ = self.grounding_checker.filter_grounded_steps(
-                steps=["Navigate to and open device Settings.", f"Check {topic} configuration."],
-                siis_text=f"{siis_title}\n{siis_content}",
-            )
-            if not fallback_steps:
-                lines = [l.strip() for l in siis_content.split("\n") if l.strip()]
-                first_line = lines[0] if lines else "Check device settings and configurations."
-                fallback_steps = [first_line[:100].rstrip(".") + "."]
-
-            built_actions.append(
-                Action(
-                    actionName=f"Check {topic} Settings",
-                    description=f"It will configure your {topic.lower()} settings",
-                    category=actionCategory.manual,
-                    stepGroups=[
-                        StepGroup(
-                            steps=[sanitize_text(s) for s in fallback_steps],
-                            actionableDeeplink=None,
-                            validationDeeplink=None,
-                        )
-                    ],
-                )
-            )
+            return ContextDeeplinkResponse(contexts=[])
 
         # 4. Sort Actions strictly: auto -> manual -> critical
         built_actions.sort(
@@ -201,7 +185,7 @@ class ColdPathExtractionEngine:
         # 6. Cache Writeback
         if self.cache:
             self.cache.put(
-                query=query,
+                query=enriched_query.normalized_query,
                 response=final_response,
                 siis_response=siis_response,
                 scenario_id=scenario_id,
