@@ -68,7 +68,7 @@ production LLM (e.g. Gemini/OpenAI) latency.
 - **LLM Mock Data**: Because the test suite uses `DeterministicFallbackExtractor` during cold path benchmarking (by default in offline test mode), the reported "Extraction" latency is exceptionally low (~20ms). Real production LLM invocation will likely shift this metric up dramatically (e.g. 500ms - 2s).
 
 ## 8. Optimization Opportunities Discovered
-1. **Startup Initialization**: Model/Tokenizer loading for the `FastPathSemanticCache` causes the startup sequence to miss the <= 8.0s constraint (~14.7s measured). Lazy loading the SentenceTransformer or deferring cache pre-warm could fix this.
+1. **Startup Initialization**: Model/Tokenizer loading for the `FastPathSemanticCache` causes the startup sequence to miss the <= 8.0s constraint (~10.167s measured in current deterministic execution run). Lazy loading the SentenceTransformer or deferring cache pre-warm could fix this.
 2. **Semantic Cache Paraphrase Latency**: The P99 latency for paraphrases hits ~74ms, which is mostly driven by SentenceTransformer embedding computation overhead.
 3. **Pydantic Validation Firewall**: Adding Pydantic v2 `TypeAdapter` and avoiding full `.dict()` instantiations during the Serialization step could shave fractions of milliseconds, though serialization is currently extremely fast (~0.29ms).
 
