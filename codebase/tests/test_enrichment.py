@@ -32,8 +32,17 @@ def test_negation_preservation():
     q3 = "do not disable wifi"
     assert enricher.enrich(q3).polarity == "negated_disable"
 
-    q4 = "won't turn off wifi"
-    assert enricher.enrich(q4).polarity == "negated_disable"
+def test_problem_vs_negation():
+    enricher = QueryEnricher()
+
+    q1 = "wifi won't turn on"
+    assert enricher.enrich(q1).polarity == "problem"
+
+    q2 = "cannot enable bluetooth"
+    assert enricher.enrich(q2).polarity == "problem"
+
+    q3 = "does not turn off"
+    assert enricher.enrich(q3).polarity == "problem"
 
 def test_ambiguous_operations_are_neutral():
     enricher = QueryEnricher()
@@ -52,7 +61,7 @@ def test_conflicting_operations():
     res = enricher.enrich(q)
     assert res.polarity == "neutral"
 
-def test_determinism():
+def test_determinism_and_candidates():
     enricher = QueryEnricher()
     q = "please tell me how to factory reset my phone"
     res1 = enricher.enrich(q)
@@ -61,6 +70,22 @@ def test_determinism():
     assert res1.polarity == res2.polarity
     assert res1.entities == res2.entities
     assert res1.entities == ["reset"]
+    assert res1.technical_terms == ["reset"]
+    assert res1.intent_candidates == ["reset"]
+
+    q3 = "turn off bluetooth"
+    res3 = enricher.enrich(q3)
+    assert res3.polarity == "disable"
+    assert res3.technical_terms == ["bluetooth"]
+    assert res3.intent_candidates == ["disable bluetooth"]
+
+    q4 = "enable smart switch and wifi"
+    res4 = enricher.enrich(q4)
+    assert res4.polarity == "enable"
+    assert "smart switch" in res4.technical_terms
+    assert "wifi" in res4.technical_terms
+    assert "enable smart switch" in res4.intent_candidates
+    assert "enable wifi" in res4.intent_candidates
 
 def test_long_input_truncation():
     enricher = QueryEnricher()

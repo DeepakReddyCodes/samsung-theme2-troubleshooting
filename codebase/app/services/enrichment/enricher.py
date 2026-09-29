@@ -21,6 +21,8 @@ class EnrichedQuery:
     normalized_query: str
     polarity: str
     entities: List[str] = field(default_factory=list)
+    technical_terms: List[str] = field(default_factory=list)
+    intent_candidates: List[str] = field(default_factory=list)
 
 
 class QueryEnricher:
@@ -53,31 +55,47 @@ class QueryEnricher:
         self.disable_regex = re.compile(rf"\b({'|'.join(disable_terms)})\b")
 
         # Negation matcher bound to operations
-        self.negation_enable_regex = re.compile(rf"\b(?:do not|cannot|will not|does not)\s+(?:{'|'.join(enable_terms)})\b")
-        self.negation_disable_regex = re.compile(rf"\b(?:do not|cannot|will not|does not)\s+(?:{'|'.join(disable_terms)})\b")
+        # Differentiating between problem/failure semantics ("cannot", "will not") and active negations ("do not")
+        problem_prefixes = ["cannot", "will not", "does not", "can not"]
+        negation_prefixes = ["do not"]
+
+        self.problem_enable_regex = re.compile(rf"\b(?:{'|'.join(problem_prefixes)})\s+(?:{'|'.join(enable_terms)})\b")
+        self.problem_disable_regex = re.compile(rf"\b(?:{'|'.join(problem_prefixes)})\s+(?:{'|'.join(disable_terms)})\b")
+
+        self.negation_enable_regex = re.compile(rf"\b(?:{'|'.join(negation_prefixes)})\s+(?:{'|'.join(enable_terms)})\b")
+        self.negation_disable_regex = re.compile(rf"\b(?:{'|'.join(negation_prefixes)})\s+(?:{'|'.join(disable_terms)})\b")
 
         # Entities
         self.entity_keywords = {"backup", "restore", "reset", "lock", "unlock"}
 
     def _determine_polarity(self, text: str) -> str:
         """Deterministically determine polarity using token-bounded operations and local scoped negation."""
+        has_problem_enable = bool(self.problem_enable_regex.search(text))
+        has_problem_disable = bool(self.problem_disable_regex.search(text))
         has_negated_enable = bool(self.negation_enable_regex.search(text))
         has_negated_disable = bool(self.negation_disable_regex.search(text))
 
         # Remove negated phrases from the text to check for unnegated operations safely
         # We don't modify the actual query text passed outwards, only for this local check
-        reduced_text = self.negation_enable_regex.sub("", text)
+        reduced_text = self.problem_enable_regex.sub("", text)
+        reduced_text = self.problem_disable_regex.sub("", reduced_text)
+        reduced_text = self.negation_enable_regex.sub("", reduced_text)
         reduced_text = self.negation_disable_regex.sub("", reduced_text)
 
         has_enable = bool(self.enable_regex.search(reduced_text))
         has_disable = bool(self.disable_regex.search(reduced_text))
 
         # Count total operations found
-        total_ops = sum([has_enable, has_disable, has_negated_enable, has_negated_disable])
+        total_ops = sum([has_enable, has_disable, has_negated_enable, has_negated_disable, has_problem_enable, has_problem_disable])
 
         # If more than one conflicting intent is detected, fall back to neutral
         if total_ops > 1:
             return "neutral"
+
+        if has_problem_enable or has_problem_disable:
+            # "cannot enable" or "cannot disable" -> problem state rather than request negation
+            return "problem"
+
         if has_negated_enable:
             return "negated_enable"
         if has_negated_disable:
@@ -92,7 +110,13 @@ class QueryEnricher:
     def enrich(self, query: str) -> EnrichedQuery:
         """Enrich a raw query into an EnrichedQuery object."""
         if not query or not query.strip():
-            return EnrichedQuery(normalized_query="", polarity="neutral", entities=[])
+            return EnrichedQuery(
+                normalized_query="",
+                polarity="neutral",
+                entities=[],
+                technical_terms=[],
+                intent_candidates=[]
+            )
 
         # Truncate at 1024 chars for safety against pathological inputs
         query = query[:1024]
@@ -122,6 +146,13 @@ class QueryEnricher:
 
         polarity = self._determine_polarity(cleaned)
 
+        # Technical Terms (Deterministic domain vocabulary)
+        domain_vocab = ["wifi", "bluetooth", "touch screen", "lock screen", "smart switch", "auto sync", "backup", "restore", "reset", "lock", "unlock"]
+        technical_terms = []
+        for term in domain_vocab:
+            if re.search(rf"\b{term}\b", cleaned):
+                technical_terms.append(term)
+
         # Determine entities
         tokens = set(cleaned.split())
         entities = []
@@ -132,11 +163,51 @@ class QueryEnricher:
         # Also map specific phrases that act as entities
         if "back up" in cleaned and "backup" not in entities:
             entities.append("backup")
+            if "backup" not in technical_terms:
+                technical_terms.append("backup")
         if "factory reset" in cleaned and "reset" not in entities:
             entities.append("reset")
+            if "reset" not in technical_terms:
+                technical_terms.append("reset")
+
+        # Intent Candidates (Operation + Contextual Target)
+        intent_candidates = []
+        base_ops = {
+            "enable": "enable",
+            "disable": "disable",
+            "negated_enable": "negated_enable",
+            "negated_disable": "negated_disable",
+            "problem": "problem",
+        }
+
+        # Extract actions like reset, restore
+        action_intents = []
+        for kw in ["reset", "restore", "backup", "lock", "unlock"]:
+            if kw in entities:
+                action_intents.append(kw)
+
+        if polarity in base_ops:
+            op_str = base_ops[polarity]
+            # Try combining with a technical term
+            targets = [t for t in technical_terms if t not in self.entity_keywords]
+            if targets:
+                for t in targets:
+                    intent_candidates.append(f"{op_str} {t}")
+            else:
+                intent_candidates.append(op_str)
+
+        # Append action intents
+        for act in action_intents:
+            intent_candidates.append(act)
+
+        # Fallback if no specific intents found
+        if not intent_candidates and "neutral" not in polarity:
+             intent_candidates.append(polarity)
 
         return EnrichedQuery(
             normalized_query=cleaned,
             polarity=polarity,
-            entities=sorted(entities)
+            entities=sorted(entities),
+            technical_terms=sorted(list(set(technical_terms))),
+            intent_candidates=sorted(list(set(intent_candidates)))
         )
