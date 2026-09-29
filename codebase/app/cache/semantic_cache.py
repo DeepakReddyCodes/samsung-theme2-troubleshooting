@@ -20,12 +20,13 @@ import logging
 from pathlib import Path
 import re
 import time
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union, Set
 
 import numpy as np
 
 from app.core.firewall import ValidationFirewall
 from app.core.schema import ContextDeeplinkResponse
+from app.services.enrichment.enricher import QueryEnricher
 
 logger = logging.getLogger(__name__)
 
@@ -181,6 +182,7 @@ class FastPathSemanticCache:
         )
         self.firewall = firewall or ValidationFirewall(catalog_path=catalog_path)
         self.enable_embeddings = enable_embeddings
+        self.enricher = QueryEnricher()
 
         # Tier 1: Exact hash table (key -> CacheEntry)
         self.exact_store: Dict[str, CacheEntry] = {}
@@ -201,9 +203,8 @@ class FastPathSemanticCache:
         self.misses = 0
         self.latencies_ms: List[float] = []
 
-    @staticmethod
-    def normalize_query(query: str) -> str:
-        return normalize_query(query)
+    def normalize_query(self, query: str) -> str:
+        return self.enricher.enrich(query).normalized_query
 
     def _init_embedding_model(self) -> None:
         """Initialize sentence-transformers model for dense semantic caching."""
@@ -244,40 +245,26 @@ class FastPathSemanticCache:
 
     def _has_intent_conflict(self, query_norm: str, cached_norm: str) -> bool:
         """Safety check to ensure query does not have opposing action intent to cached plan."""
-        def _extract_intents(text: str) -> Set[str]:
-            intents = set()
-            tokens = set(text.split())
-            if "restore" in tokens or "recovering" in tokens:
-                intents.add("restore")
-            if "reset" in tokens or "wipe" in tokens or "factory" in tokens:
-                intents.add("reset")
-            if "backup" in tokens or ("back" in tokens and "up" in tokens) or "sync" in tokens:
-                intents.add("backup")
-            if "disable" in tokens or "turn off" in text or "deactivate" in tokens or "remove" in tokens or "delete" in tokens:
-                intents.add("disable")
-            if "enable" in tokens or "turn on" in text or "activate" in tokens or "add" in tokens or "create" in tokens or "setup" in tokens:
-                intents.add("enable")
-            if "unlock" in tokens:
-                intents.add("unlock")
-            elif "lock" in tokens and "screen" not in text:
-                intents.add("lock")
-            return intents
-
-        q_int = _extract_intents(query_norm)
-        c_int = _extract_intents(cached_norm)
+        q_en = self.enricher.enrich(query_norm)
+        c_en = self.enricher.enrich(cached_norm)
 
         conflicting_pairs = [
             ("backup", "restore"),
             ("backup", "reset"),
             ("restore", "reset"),
             ("enable", "disable"),
+            ("negated_enable", "enable"),
+            ("negated_disable", "disable"),
             ("lock", "unlock"),
         ]
 
+        q_int = set(q_en.entities + ([q_en.polarity] if q_en.polarity != "neutral" else []))
+        c_int = set(c_en.entities + ([c_en.polarity] if c_en.polarity != "neutral" else []))
+
         for a1, a2 in conflicting_pairs:
-            if a1 in c_int and a2 not in c_int and a2 in q_int:
+            if a1 in c_int and a2 in q_int:
                 return True
-            if a2 in c_int and a1 not in c_int and a1 in q_int:
+            if a2 in c_int and a1 in q_int:
                 return True
         return False
 
@@ -293,7 +280,7 @@ class FastPathSemanticCache:
         t0 = time.perf_counter()
         self.total_lookups += 1
 
-        norm_query = normalize_query(query)
+        norm_query = self.normalize_query(query)
         fingerprint = compute_siis_fingerprint(siis_response)
         exact_key = self._compute_key(norm_query, fingerprint)
 
@@ -379,7 +366,7 @@ class FastPathSemanticCache:
         else:
             final_response = response
 
-        norm_query = normalize_query(query)
+        norm_query = self.normalize_query(query)
         fingerprint = compute_siis_fingerprint(siis_response)
         exact_key = self._compute_key(norm_query, fingerprint)
 
