@@ -6,7 +6,7 @@ Measures:
 3. Paraphrase Queries Benchmark (P50, P95, P99, Hit Rate)
 4. Unseen SIIS Scenarios Generalization Benchmark (Cold-path latency, P50, P95, P99, Validity)
 5. Server Processing Latency vs End-to-End Latency
-6. Official 12-Gate Schema & Quality Validation
+6. 12-Gate Schema & Quality Validation
 """
 import json
 import math
@@ -226,8 +226,12 @@ def percentile(data: List[float], p: float) -> float:
 
 def run_benchmark():
     print("=" * 80)
-    print("SAMSUNG PRISM GENAI HACKATHON — OFFICIAL PHASE 7 BENCHMARK SUITE")
+    print("SAMSUNG PRISM THEME 2 — ENGINEERING BENCHMARK SUITE")
     print("=" * 80)
+    print("NOTE: Cold path extraction in this execution mode uses")
+    print("deterministic/offline extraction. It does not represent")
+    print("production LLM (e.g. Gemini/OpenAI) latency.")
+    print("================================================================================")
 
     # ------------------------------------------------------------------------
     # 1. Startup & Model Initialization Benchmark
@@ -242,7 +246,7 @@ def run_benchmark():
         health_data = health_resp.json()
         assert health_data["status"] == "ok"
 
-        print(f"-> Startup & Prewarming Duration: {startup_duration:.3f} s (Official Target: <= 8.0 s)")
+        print(f"-> Startup & Prewarming Duration: {startup_duration:.3f} s (Engineering Startup Target: <= 8.0 s)")
         startup_gate_pass = startup_duration <= 8.0
         print(f"-> Startup Gate: {'PASS' if startup_gate_pass else 'FAIL'}")
 
@@ -301,7 +305,7 @@ def run_benchmark():
         p99_repeat_http = percentile(repeat_http_latencies, 99)
     
         print(f"-> Total Executions: {total_repeats}")
-        print(f"-> Repeat Cache Hit Rate: {repeat_hit_rate:.2f}% (Official Target: >= 90%)")
+        print(f"-> Repeat Cache Hit Rate: {repeat_hit_rate:.2f}% (Engineering Target: >= 90%)")
         print(f"-> Server Latency: P50={p50_repeat_server:.2f}ms | P95={p95_repeat_server:.2f}ms | P99={p99_repeat_server:.2f}ms")
         print(f"-> End-to-End HTTP: P50={p50_repeat_http:.2f}ms | P95={p95_repeat_http:.2f}ms | P99={p99_repeat_http:.2f}ms")
         repeat_hit_gate_pass = repeat_hit_rate >= 90.0
@@ -361,7 +365,7 @@ def run_benchmark():
         p99_para_http = percentile(para_http_latencies, 99)
     
         print(f"-> Total Paraphrases Tested: {total_paras}")
-        print(f"-> Paraphrase Cache Hit Rate: {para_hit_rate:.2f}% (Official Target: >= 80%)")
+        print(f"-> Paraphrase Cache Hit Rate: {para_hit_rate:.2f}% (Engineering Target: >= 80%)")
         print(f"   - Semantic Hits: {para_semantic_hits} ({para_semantic_hits/total_paras*100:.1f}%)")
         print(f"   - Exact Hits: {para_exact_hits} ({para_exact_hits/total_paras*100:.1f}%)")
         print(f"-> Server Latency: P50={p50_para_server:.2f}ms | P95={p95_para_server:.2f}ms | P99={p99_para_server:.2f}ms")
@@ -446,9 +450,9 @@ def run_benchmark():
         print(f"-> All Unseen Scenarios Schema & Firewall Valid: {unseen_all_valid} ({len(unseen_records)}/{len(unseen_records)})")
     
     # ------------------------------------------------------------------------
-    # 5. Official 12-Gate Schema & Quality Validation (Task 4)
+    # 5. 12-Gate Schema & Quality Validation (Engineering Benchmark)
     # ------------------------------------------------------------------------
-    print("\n[BENCHMARK 5] Running Official 12-Gate Schema & Quality Validation...")
+    print("\n[BENCHMARK 5] Running 12-Gate Schema & Quality Validation...")
     # Evaluate across all records in results.jsonl
     with open(CATALOG_FILE, "r", encoding="utf-8") as f:
         catalog_raw = json.load(f)

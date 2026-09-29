@@ -58,6 +58,9 @@ app.add_middleware(
         "X-Cache-Hit",
         "X-Cache-Type",
         "X-Extraction-Path",
+        "X-Cache-Time-Ms",
+        "X-Extract-Time-Ms",
+        "X-Serialize-Time-Ms",
     ],
 )
 
