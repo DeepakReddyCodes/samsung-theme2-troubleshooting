@@ -172,37 +172,32 @@ class QueryEnricher:
 
         # Intent Candidates (Operation + Contextual Target)
         intent_candidates = []
-        base_ops = {
-            "enable": "enable",
-            "disable": "disable",
-            "negated_enable": "negated_enable",
-            "negated_disable": "negated_disable",
-            "problem": "problem",
-        }
 
-        # Extract actions like reset, restore
-        action_intents = []
-        for kw in ["reset", "restore", "backup", "lock", "unlock"]:
-            if kw in entities:
-                action_intents.append(kw)
+        # Determine actual operations present regardless of final resolved polarity
+        ops_present = set()
 
-        if polarity in base_ops:
-            op_str = base_ops[polarity]
-            # Try combining with a technical term
-            targets = [t for t in technical_terms if t not in self.entity_keywords]
+        if self.enable_regex.search(cleaned) or self.problem_enable_regex.search(cleaned) or self.negation_enable_regex.search(cleaned):
+            ops_present.add("enable")
+        if self.disable_regex.search(cleaned) or self.problem_disable_regex.search(cleaned) or self.negation_disable_regex.search(cleaned):
+            ops_present.add("disable")
+
+        # Combine detected operations with technical targets
+        targets = [t for t in technical_terms if t not in self.entity_keywords]
+        for op in ops_present:
             if targets:
                 for t in targets:
-                    intent_candidates.append(f"{op_str} {t}")
+                    intent_candidates.append(f"{op} {t}")
             else:
-                intent_candidates.append(op_str)
+                intent_candidates.append(op)
 
-        # Append action intents
-        for act in action_intents:
-            intent_candidates.append(act)
+        # Append standalone action intents (e.g. reset, restore)
+        for kw in ["reset", "restore", "backup", "lock", "unlock"]:
+            if kw in entities:
+                intent_candidates.append(kw)
 
-        # Fallback if no specific intents found
-        if not intent_candidates and "neutral" not in polarity:
-             intent_candidates.append(polarity)
+        # Fallback if no specific intents found and polarity isn't neutral
+        if not intent_candidates and polarity not in {"neutral", "problem"}:
+            intent_candidates.append(polarity)
 
         return EnrichedQuery(
             normalized_query=cleaned,
