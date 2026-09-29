@@ -32,10 +32,11 @@ def generate_markdown_report(json_report_path: Path, output_markdown_path: Path)
 - **Paraphrase Scenarios Valid Actions**: {data['action_validity']['paraphrase_valid_actions']}
 
 ## 4. Deeplink Resolution
-- **Valid Catalog Matches**: {data['deeplink_resolution']['catalog_matches']}
-- **Dummy Positive Fallbacks (Valid Formatting)**: {data['deeplink_resolution']['dummy_positives']}
+- **Valid Exact Catalog Matches**: {data['deeplink_resolution']['catalog_matches']}
+- **Valid Validation Catalog Matches**: {data['deeplink_resolution']['validation_matches']}
+- **Fallback Observed / Formatting-Valid (Dummy Positive)**: {data['deeplink_resolution']['dummy_positives']}
 - **Invalid Attempts (e.g. malformed or lacking concrete target)**: {data['deeplink_resolution']['invalid_attempts']}
-*(Limitation: The evaluator checks valid formatting and target description length for dummy positives, but it cannot prove end-to-end SIIS provenance from the output JSON alone.)*
+*(Limitation: The evaluator checks valid formatting and target description length for dummy positives, but it cannot prove end-to-end SIIS provenance from the final JSON alone. It is classified as fallback observed, not automatically correct.)*
 
 ## 5. Adversarial Safety & Generalization
 - **Safely Rejected (422 / Empty)**: {data['adversarial_safety']['safely_rejected_422_or_empty']}
@@ -49,6 +50,7 @@ def generate_markdown_report(json_report_path: Path, output_markdown_path: Path)
 - **Canonical**: p50: {data['latency_ms']['canonical']['p50']:.2f} | p95: {data['latency_ms']['canonical']['p95']:.2f} | p99: {data['latency_ms']['canonical']['p99']:.2f}
 - **Paraphrase**: p50: {data['latency_ms']['paraphrase']['p50']:.2f} | p95: {data['latency_ms']['paraphrase']['p95']:.2f} | p99: {data['latency_ms']['paraphrase']['p99']:.2f}
 - **Unseen**: p50: {data['latency_ms']['unseen']['p50']:.2f} | p95: {data['latency_ms']['unseen']['p95']:.2f} | p99: {data['latency_ms']['unseen']['p99']:.2f}
+*(Limitation: The latencies above rely on deterministic/offline benchmarking and cold-path fallbacks. They do not represent real LLM/API latency, which will be measured eventually.)*
 
 ## 8. Cost
 - Cost implementation parameterized currently based on local testing (tokens currently unmetered due to deterministic/mock LLM logic in this checkpoint).

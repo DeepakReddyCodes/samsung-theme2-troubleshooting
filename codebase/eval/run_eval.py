@@ -81,7 +81,7 @@ def run_evaluation():
         status, data, headers, latency = send_request(client, item["original_query"], item["siis_response"])
         results["canonical"]["total"] += 1
 
-        if status == 500 or (status != 200 and status != 422):
+        if status == 500 or status == 0 or (status != 200 and status != 422):
             results["canonical"]["eval_errors"] += 1
             continue
 
@@ -105,7 +105,7 @@ def run_evaluation():
         status, data, headers, latency = send_request(client, item["query"], item["siis_response"])
         results["paraphrased"]["total"] += 1
 
-        if status == 500:
+        if status == 500 or status == 0 or (status != 200 and status != 422):
             results["paraphrased"]["eval_errors"] += 1
             continue
 
@@ -124,7 +124,7 @@ def run_evaluation():
         status, data, headers, latency = send_request(client, item["query"], item["siis_response"])
         results["unseen"]["total"] += 1
 
-        if status == 500:
+        if status == 500 or status == 0 or (status != 200 and status != 422):
              results["unseen"]["eval_errors"] += 1
              continue
 
@@ -156,7 +156,7 @@ def run_evaluation():
         status, data, headers, latency = send_request(client, item["query"], item["siis_response"])
         results["adversarial"]["total"] += 1
 
-        if status == 500 or (status != 200 and status != 422):
+        if status == 500 or status == 0 or (status != 200 and status != 422):
              results["adversarial"]["eval_errors"] += 1
              continue
 
@@ -186,7 +186,7 @@ def run_evaluation():
         status, data, headers, latency = send_request(client, item["query"], item["siis_response"])
         results["polarity"]["total"] += 1
 
-        if status == 500 or (status != 200 and status != 422):
+        if status == 500 or status == 0 or (status != 200 and status != 422):
             results["polarity"]["eval_errors"] += 1
             continue
 
@@ -236,6 +236,7 @@ def run_evaluation():
         },
         "deeplink_resolution": {
             "catalog_matches": results["canonical"]["dl_catalog"],
+            "validation_matches": results["canonical"]["dl_validation"] if "dl_validation" in results["canonical"] else 0,
             "dummy_positives": results["canonical"]["dl_dummy"],
             "invalid_attempts": results["canonical"]["dl_invalid"]
         },

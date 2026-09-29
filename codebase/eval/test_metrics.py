@@ -48,14 +48,20 @@ def test_polarity_correctness():
     assert check_polarity_correctness({"contexts": [{"actions": [{"actionName": "Turn on Wi-Fi"}]}]}, "enable", "wi-fi") is True
     assert check_polarity_correctness({"contexts": [{"actions": [{"actionName": "Disable Wi-Fi"}]}]}, "disable", "wi-fi") is True
 
+    # Normalized Targets (wifi vs wi-fi)
+    assert check_polarity_correctness({"contexts": [{"actions": [{"actionName": "Enable wifi"}]}]}, "enable", "wi-fi") is True
+
     # Contradictory polarities
     assert check_polarity_correctness({"contexts": [{"actions": [{"actionName": "Enable and disable Wi-Fi"}]}]}, "enable", "wi-fi") is False
 
-    # Explicit negations
+    # Explicit negations & Exact Operation Semantics
+    # "Do not disable" should not automatically be accepted as "Enable" to enforce exact benchmark rules
     assert check_polarity_correctness({"contexts": [{"actions": [{"actionName": "Do not turn on Wi-Fi"}]}]}, "negated_enable", "wi-fi") is True
     assert check_polarity_correctness({"contexts": [{"actions": [{"actionName": "Do not turn on Wi-Fi"}]}]}, "enable", "wi-fi") is False
+    assert check_polarity_correctness({"contexts": [{"actions": [{"actionName": "Do not disable Wi-Fi"}]}]}, "enable", "wi-fi") is False
+    assert check_polarity_correctness({"contexts": [{"actions": [{"actionName": "Do not disable Wi-Fi"}]}]}, "negated_disable", "wi-fi") is True
 
-    # Missing target
+    # Missing target / Wrong Target
     assert check_polarity_correctness({"contexts": [{"actions": [{"actionName": "Enable Bluetooth"}]}]}, "enable", "wi-fi") is False
     assert check_polarity_correctness({"contexts": [{"actions": [{"actionName": "Turn on Bluetooth"}]}]}, "enable", "bluetooth") is True
 

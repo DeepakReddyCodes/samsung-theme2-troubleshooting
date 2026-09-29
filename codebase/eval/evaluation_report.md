@@ -3,7 +3,7 @@
 ## Metadata
 - **Total Scenarios Evaluated**: 37
 - **Total Evaluator Errors**: 0
-- **Timestamp**: 1790691945.4181218
+- **Timestamp**: 1790694017.5177016
 
 ## 1. Grounding (Measured via Lexical Approximation)
 - **Unseen Actionable Scenarios Checked**: 4
@@ -19,10 +19,11 @@
 - **Paraphrase Scenarios Valid Actions**: 4
 
 ## 4. Deeplink Resolution
-- **Valid Catalog Matches**: 10
-- **Dummy Positive Fallbacks (Valid Formatting)**: 0
+- **Valid Exact Catalog Matches**: 10
+- **Valid Validation Catalog Matches**: 0
+- **Fallback Observed / Formatting-Valid (Dummy Positive)**: 0
 - **Invalid Attempts (e.g. malformed or lacking concrete target)**: 0
-*(Limitation: The evaluator checks valid formatting and target description length for dummy positives, but it cannot prove end-to-end SIIS provenance from the output JSON alone.)*
+*(Limitation: The evaluator checks valid formatting and target description length for dummy positives, but it cannot prove end-to-end SIIS provenance from the final JSON alone. It is classified as fallback observed, not automatically correct.)*
 
 ## 5. Adversarial Safety & Generalization
 - **Safely Rejected (422 / Empty)**: 0
@@ -33,9 +34,10 @@
 - **Strict Semantic Correctness Count**: 2 / 5 total polarity cases
 
 ## 7. Latency (ms)
-- **Canonical**: p50: 4.42 | p95: 12.73 | p99: 39.53
-- **Paraphrase**: p50: 54.19 | p95: 625.92 | p99: 699.50
-- **Unseen**: p50: 2.61 | p95: 3.57 | p99: 3.70
+- **Canonical**: p50: 4.52 | p95: 12.75 | p99: 34.17
+- **Paraphrase**: p50: 167.93 | p95: 546.53 | p99: 577.78
+- **Unseen**: p50: 5.24 | p95: 5.67 | p99: 5.70
+*(Limitation: The latencies above rely on deterministic/offline benchmarking and cold-path fallbacks. They do not represent real LLM/API latency, which will be measured eventually.)*
 
 ## 8. Cost
 - Cost implementation parameterized currently based on local testing (tokens currently unmetered due to deterministic/mock LLM logic in this checkpoint).

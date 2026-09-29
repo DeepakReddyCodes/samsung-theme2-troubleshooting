@@ -158,6 +158,7 @@ def check_polarity_correctness(response_data: Dict[str, Any], expected_polarity:
     """
     Verifies the intended action polarity (enable vs disable) AND the specified target entity rigorously.
     Tests for explicit negations, contradictory output, and wrong targets.
+    Enforces exact operation semantics for benchmarking.
     """
     contexts = response_data.get("contexts", [])
     if not contexts:
@@ -166,34 +167,40 @@ def check_polarity_correctness(response_data: Dict[str, Any], expected_polarity:
     actions_text = json.dumps(contexts[0].get("actions", [])).lower()
 
     target_lower = target_entity.lower()
+    # Normalize variants
+    if target_lower == "wi-fi":
+        target_lower = "wifi"
+
+    actions_normalized = actions_text.replace("wi-fi", "wifi")
 
     # Must contain the target to pass
-    if target_lower not in actions_text:
+    if target_lower not in actions_normalized:
         return False
 
     enable_terms = {"enable", "turn on"}
     disable_terms = {"disable", "turn off"}
-    negated_enable_terms = {"do not enable", "don't enable", "do not turn on", "don't turn on"}
-    negated_disable_terms = {"do not disable", "don't disable", "do not turn off", "don't turn off"}
+    negated_enable_terms = {"do not enable", "don't enable", "do not turn on", "don't turn on", "keep off"}
+    negated_disable_terms = {"do not disable", "don't disable", "do not turn off", "don't turn off", "keep on"}
 
-    has_enable = any(t in actions_text for t in enable_terms) and not any(t in actions_text for t in negated_enable_terms)
-    has_disable = any(t in actions_text for t in disable_terms) and not any(t in actions_text for t in negated_disable_terms)
+    has_enable = any(t in actions_normalized for t in enable_terms) and not any(t in actions_normalized for t in negated_enable_terms)
+    has_disable = any(t in actions_normalized for t in disable_terms) and not any(t in actions_normalized for t in negated_disable_terms)
 
-    has_negated_enable = any(t in actions_text for t in negated_enable_terms)
-    has_negated_disable = any(t in actions_text for t in negated_disable_terms)
+    has_negated_enable = any(t in actions_normalized for t in negated_enable_terms)
+    has_negated_disable = any(t in actions_normalized for t in negated_disable_terms)
 
     # Fail on contradictory output containing both explicit enable and disable without clear context
     if has_enable and has_disable:
         return False
 
+    # Evaluate exact operation semantics
     if expected_polarity == "enable":
-        return has_enable or has_negated_disable
+        return has_enable and not has_negated_disable # Don't automatically conflate "do not disable" as "enable"
     elif expected_polarity == "disable":
-        return has_disable or has_negated_enable
+        return has_disable and not has_negated_enable
     elif expected_polarity == "negated_enable":
-        return has_negated_enable or has_disable
+        return has_negated_enable
     elif expected_polarity == "negated_disable":
-        return has_negated_disable or has_enable
+        return has_negated_disable
 
     return False
 
