@@ -88,12 +88,12 @@ def compute_siis_fingerprint(siis_response: Optional[Union[Dict[str, Any], str]]
         content = str(siis_response.get("content", "")).strip().lower()
         title = re.sub(r"\s+", " ", title)
         content = re.sub(r"\s+", " ", content)
-        key_content = content[:500]  # First 500 chars captures article context
+        key_content = content
         payload = f"{title}::{key_content}".encode("utf-8")
         return hashlib.sha256(payload).hexdigest()[:16]
 
     if isinstance(siis_response, str):
-        cleaned = re.sub(r"\s+", " ", siis_response.strip().lower()[:500])
+        cleaned = re.sub(r"\s+", " ", siis_response.strip().lower())
         payload = cleaned.encode("utf-8")
         return hashlib.sha256(payload).hexdigest()[:16]
 
@@ -300,11 +300,23 @@ class FastPathSemanticCache:
         # 1. Tier 1: Exact Hash Hit
         if exact_key in self.exact_store:
             entry = self.exact_store[exact_key]
-            entry.hit_count += 1
-            self.exact_hits += 1
-            t_ms = (time.perf_counter() - t0) * 1000.0
-            self.latencies_ms.append(t_ms)
-            return entry.response, {
+
+            # Version isolation
+            if entry.key != self._compute_key(entry.normalized_query, entry.siis_fingerprint):
+                pass
+            else:
+                entry.hit_count += 1
+                self.exact_hits += 1
+
+                # Req 7: Cached responses MUST pass ValidationFirewall before return
+                validated_resp, errors = self.firewall.validate_response(entry.response, allow_repair=True)
+                if errors:
+                    logger.error(f"Cached response failed validation on return: {errors}")
+                    return None, {"cache_hit": False, "hit_type": "invalid_cached", "latency_ms": 0.0, "scenario_id": None, "confidence": 0.0}
+
+                t_ms = (time.perf_counter() - t0) * 1000.0
+                self.latencies_ms.append(t_ms)
+                return validated_resp, {
                 "cache_hit": True,
                 "hit_type": "exact",
                 "latency_ms": round(t_ms, 3),
@@ -334,11 +346,22 @@ class FastPathSemanticCache:
                         if self._has_intent_conflict(norm_query, candidate.normalized_query):
                             continue
 
+                        # Version token mismatch
+                        if candidate.key != self._compute_key(candidate.normalized_query, candidate.siis_fingerprint):
+                            continue
+
                         candidate.hit_count += 1
                         self.semantic_hits += 1
+
+                        # Req 7: Cached responses MUST pass ValidationFirewall before return
+                        validated_resp, errors = self.firewall.validate_response(candidate.response, allow_repair=True)
+                        if errors:
+                            logger.error(f"Semantic cached response failed validation on return: {errors}")
+                            continue  # Try next candidate if available
+
                         t_ms = (time.perf_counter() - t0) * 1000.0
                         self.latencies_ms.append(t_ms)
-                        return candidate.response, {
+                        return validated_resp, {
                             "cache_hit": True,
                             "hit_type": "semantic",
                             "latency_ms": round(t_ms, 3),
