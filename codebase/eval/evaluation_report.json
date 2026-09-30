@@ -2,7 +2,7 @@
   "metadata": {
     "total_evaluated": 37,
     "total_eval_errors": 0,
-    "timestamp": 1790737834.7859766
+    "timestamp": 1790769772.782581
   },
   "dataset_sizes": {
     "canonical": 20,
@@ -28,7 +28,11 @@
     "validation_matches": 8,
     "verified_dummy_positives": 0,
     "unable_to_verify_provenance": 0,
-    "invalid_attempts": 0
+    "invalid_attempts": 0,
+    "total_returned_step_groups": 22,
+    "actionable_deeplink_present_count": 10,
+    "actionable_deeplink_coverage_pct": 45.45454545454545,
+    "missing_actionable_deeplink_count": 12
   },
   "adversarial_safety": {
     "safely_rejected_422_or_empty": 0,
@@ -41,19 +45,19 @@
   },
   "latency_ms": {
     "canonical": {
-      "p50": 2.5592814999981783,
-      "p95": 6.301358249675108,
-      "p99": 9.724189249809562
+      "p50": 3.386321500329359,
+      "p95": 10.412271450331922,
+      "p99": 34.238156689971184
     },
     "paraphrase": {
-      "p50": 29.332208999676368,
-      "p95": 213.22007230073717,
-      "p99": 235.4034928608416
+      "p50": 146.47643250009423,
+      "p95": 536.6827730505064,
+      "p99": 571.9347618105712
     },
     "unseen": {
-      "p50": 1.95007850015827,
-      "p95": 2.586575599752905,
-      "p99": 2.6688423196992512
+      "p50": 2.8389520002747304,
+      "p95": 3.8573619506678365,
+      "p99": 3.997724390737858
     }
   },
   "cache": {

@@ -3,7 +3,7 @@
 ## Metadata
 - **Total Scenarios Evaluated**: 37
 - **Total Evaluator Errors**: 0
-- **Timestamp**: 1790737834.7859766
+- **Timestamp**: 1790769772.782581
 
 ## 1. Grounding (Measured via Lexical Approximation)
 - **Unseen Actionable Scenarios Checked**: 4
@@ -19,6 +19,9 @@
 - **Paraphrase Scenarios Valid Actions**: 4
 
 ## 4. Deeplink Resolution
+- **Total Returned Step Groups**: 22
+- **Actionable Deeplink Present**: 10 (45.45% coverage)
+- **Missing Actionable Deeplink**: 12 (Actionable coverage failure)
 - **Valid Exact Catalog Matches**: 10
 - **Valid Validation Catalog Matches**: 8
 - **Verified Dummy-Positives (Provenance Metadata Matched)**: 0
@@ -35,9 +38,9 @@
 - **Strict Semantic Correctness Count**: 2 / 5 total polarity cases
 
 ## 7. Latency (ms)
-- **Canonical**: p50: 2.56 | p95: 6.30 | p99: 9.72
-- **Paraphrase**: p50: 29.33 | p95: 213.22 | p99: 235.40
-- **Unseen**: p50: 1.95 | p95: 2.59 | p99: 2.67
+- **Canonical**: p50: 3.39 | p95: 10.41 | p99: 34.24
+- **Paraphrase**: p50: 146.48 | p95: 536.68 | p99: 571.93
+- **Unseen**: p50: 2.84 | p95: 3.86 | p99: 4.00
 *(Limitation: The latencies above rely on deterministic/offline benchmarking and cold-path fallbacks. They do not represent real LLM/API latency, which will be measured eventually.)*
 
 ## 8. Cost

@@ -63,18 +63,21 @@ def check_deeplink_resolution(response_data: Dict[str, Any], valid_catalog_uris:
     """
     contexts = response_data.get("contexts", [])
     if not contexts:
-        return {"catalog_matches": 0, "validation_matches": 0, "verified_dummy_positives": 0, "unable_to_verify_provenance": 0, "invalid_attempts": 0}
+        return {"catalog_matches": 0, "validation_matches": 0, "verified_dummy_positives": 0, "unable_to_verify_provenance": 0, "invalid_attempts": 0, "total_step_groups": 0, "missing_actionable_deeplinks": 0}
 
     catalog_matches = 0
     validation_matches = 0
     verified_dummy_positives = 0
     unable_to_verify_provenance = 0
     invalid_attempts = 0
+    total_step_groups = 0
+    missing_actionable_deeplinks = 0
 
     siis_lower = siis_text.lower()
 
     for act in contexts[0].get("actions", []):
         for sg in act.get("stepGroups", []):
+            total_step_groups += 1
             dl_obj = sg.get("actionableDeeplink")
             val_obj = sg.get("validationDeeplink")
 
@@ -112,6 +115,8 @@ def check_deeplink_resolution(response_data: Dict[str, Any], valid_catalog_uris:
                 else:
                     # Non-catalog URIs or generic invalid formats fall here -> FAIL
                     invalid_attempts += 1
+            else:
+                missing_actionable_deeplinks += 1
 
             # Validation DeepLink
             if val_obj:
@@ -126,7 +131,9 @@ def check_deeplink_resolution(response_data: Dict[str, Any], valid_catalog_uris:
         "validation_matches": validation_matches, # PASS
         "verified_dummy_positives": verified_dummy_positives, # PASS
         "unable_to_verify_provenance": unable_to_verify_provenance, # UNABLE_TO_VERIFY
-        "invalid_attempts": invalid_attempts # FAIL
+        "invalid_attempts": invalid_attempts, # FAIL
+        "total_step_groups": total_step_groups,
+        "missing_actionable_deeplinks": missing_actionable_deeplinks
     }
 
 def check_grounding(response_data: Dict[str, Any], siis_text: str) -> Dict[str, Any]:

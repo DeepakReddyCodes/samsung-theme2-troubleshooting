@@ -32,6 +32,9 @@ def generate_markdown_report(json_report_path: Path, output_markdown_path: Path)
 - **Paraphrase Scenarios Valid Actions**: {data['action_validity']['paraphrase_valid_actions']}
 
 ## 4. Deeplink Resolution
+- **Total Returned Step Groups**: {data['deeplink_resolution']['total_returned_step_groups']}
+- **Actionable Deeplink Present**: {data['deeplink_resolution']['actionable_deeplink_present_count']} ({data['deeplink_resolution']['actionable_deeplink_coverage_pct']:.2f}% coverage)
+- **Missing Actionable Deeplink**: {data['deeplink_resolution']['missing_actionable_deeplink_count']} (Actionable coverage failure)
 - **Valid Exact Catalog Matches**: {data['deeplink_resolution']['catalog_matches']}
 - **Valid Validation Catalog Matches**: {data['deeplink_resolution']['validation_matches']}
 - **Verified Dummy-Positives (Provenance Metadata Matched)**: {data['deeplink_resolution']['verified_dummy_positives']}

@@ -62,7 +62,7 @@ def run_evaluation():
     valid_catalog_uris, valid_validation_uris = load_catalog_uris()
 
     results = {
-        "canonical": {"latencies": [], "cache_hits": 0, "total": 0, "valid_actions": 0, "dl_catalog": 0, "dl_verified_dummy": 0, "dl_unable_verify": 0, "dl_invalid": 0, "eval_errors": 0},
+        "canonical": {"latencies": [], "cache_hits": 0, "total": 0, "valid_actions": 0, "dl_catalog": 0, "dl_verified_dummy": 0, "dl_unable_verify": 0, "dl_invalid": 0, "dl_total_step_groups": 0, "dl_missing_actionable": 0, "eval_errors": 0},
         "paraphrased": {"latencies": [], "cache_hits": 0, "total": 0, "valid_actions": 0, "eval_errors": 0},
         "unseen": {
             "latencies": [], "total": 0, "grounded": 0, "valid_actions": 0,
@@ -101,6 +101,8 @@ def run_evaluation():
             results["canonical"]["dl_verified_dummy"] += dl_res["verified_dummy_positives"]
             results["canonical"]["dl_unable_verify"] += dl_res["unable_to_verify_provenance"]
             results["canonical"]["dl_invalid"] += dl_res["invalid_attempts"]
+            results["canonical"]["dl_total_step_groups"] += dl_res["total_step_groups"]
+            results["canonical"]["dl_missing_actionable"] += dl_res["missing_actionable_deeplinks"]
 
     # 2. Paraphrased Dataset
     paraphrased_data = load_paraphrased_dataset()
@@ -242,7 +244,11 @@ def run_evaluation():
             "validation_matches": results["canonical"]["dl_validation"] if "dl_validation" in results["canonical"] else 0,
             "verified_dummy_positives": results["canonical"]["dl_verified_dummy"],
             "unable_to_verify_provenance": results["canonical"]["dl_unable_verify"],
-            "invalid_attempts": results["canonical"]["dl_invalid"]
+            "invalid_attempts": results["canonical"]["dl_invalid"],
+            "total_returned_step_groups": results["canonical"]["dl_total_step_groups"],
+            "actionable_deeplink_present_count": results["canonical"]["dl_total_step_groups"] - results["canonical"]["dl_missing_actionable"],
+            "actionable_deeplink_coverage_pct": ((results["canonical"]["dl_total_step_groups"] - results["canonical"]["dl_missing_actionable"]) / max(results["canonical"]["dl_total_step_groups"], 1)) * 100,
+            "missing_actionable_deeplink_count": results["canonical"]["dl_missing_actionable"]
         },
         "adversarial_safety": {
             "safely_rejected_422_or_empty": results["adversarial"]["safely_rejected"],
