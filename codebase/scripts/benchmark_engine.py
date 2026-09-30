@@ -540,7 +540,7 @@ def run_benchmark():
                     dl_uri = sg.actionableDeeplink.deeplink
                     if dl_uri in valid_catalog_uris:
                         valid_deeplinks_count += 1
-                    elif dl_uri == "bixby://dummy_positive":
+                    elif dl_uri in ("voiceassist://dummy_positive", "bixby://dummy_positive"):
                         dummy_positive_count += 1
                     else:
                         scenario_dl_ok = False
@@ -550,7 +550,7 @@ def run_benchmark():
                     val_uri = sg.validationDeeplink.deeplink
                     if val_uri in valid_val_uris or val_uri in valid_catalog_uris:
                         valid_deeplinks_count += 1
-                    elif val_uri == "bixby://dummy_positive":
+                    elif val_uri in ("voiceassist://dummy_positive", "bixby://dummy_positive"):
                         dummy_positive_count += 1
                     else:
                         scenario_dl_ok = False

@@ -65,31 +65,3 @@ Evaluated against reference ground truth scenarios across Battery, Display, Came
 2. **Unindexed Settings Screens:** Certain OS features mentioned in customer care (e.g. Navigation Bar type switch) have no corresponding leaf URI in `deeplinks.json`. Resolved via sanctioned `voiceassist://dummy_positive` fallback.
 3. **Multi-Sentence Compound Complaints:** Complaints describing multiple separate issues in one query. Resolved via Next-Best-Evidence (NBE / EIG) entropy calculation to pinpoint and disambiguate the dominant technical problem.
 4. **Brand Re-labeling & Anonymization:** Dual-alias dictionary prewarming ensures both legacy Samsung/Galaxy/Bixby queries and anonymized TechCorp/Nexa/VoiceAssist queries resolve seamlessly in Tier 1.
-
----
-
-## 7. Deep Latency Distributions (P50, P95, P99)
-
-Latencies benchmarked separating **Internal Server Processing Latency** (monotonic timer `time.perf_counter()`) and **End-to-End HTTP Latency** (client roundtrip duration over network socket):
-
-| Benchmark Scenario | Sample Size | P50 (Server) | P95 (Server) | P99 (Server) | P50 (HTTP) | P95 (HTTP) | P99 (HTTP) |
-|:---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| **Canonical Repeated Queries** | 100 | **0.349 ms** | **1.239 ms** | **1.864 ms** | **1.521 ms** | **5.598 ms** | **30.52 ms** |
-| **Paraphrased Queries** | 200 | **15.829 ms** | **55.920 ms** | **147.06 ms** | **18.430 ms** | **58.160 ms** | **149.18 ms** |
-| **Cold-Path Unseen Scenarios** | 12 | **34.180 ms** | **38.800 ms** | **39.850 ms** | **36.500 ms** | **41.200 ms** | **42.500 ms** |
-
----
-
-## 8. Complete Test Suite Counts
-
-| Component / Test Suite | File Location | Tests | Passed | Failed | Duration | Status |
-|:---|:---|:---:|:---:|:---:|:---:|:---:|
-| **Validation Firewall** | `tests/test_firewall.py` | 14 | 14 | 0 | ~1.5s | **PASS** |
-| **Deeplink Resolver** | `tests/test_deeplinks.py` | 13 | 13 | 0 | ~1.8s | **PASS** |
-| **Fast-Path Semantic Cache** | `tests/test_cache.py` | 18 | 18 | 0 | ~24s | **PASS** |
-| **Cold-Path Extractor** | `tests/test_extraction.py` | 16 | 16 | 0 | ~42s | **PASS** |
-| **API Endpoints & Contract**| `tests/test_api.py` | 23 | 23 | 0 | ~48s | **PASS** |
-| **Frontend Static Serving** | `tests/test_frontend_integration.py` | 2 | 2 | 0 | ~2s | **PASS** |
-| **Frontend Unit & Component** | `frontend/tests/frontend.test.mjs` | 11 | 11 | 0 | 0.17s | **PASS** |
-| **Live Production Smoke** | `scripts/smoke_test_production.py` | 8 | 8 | 0 | 3.2s | **PASS** |
-| **Total Automated Tests** | — | **105** | **105** | **0** | — | **100% PASS** |

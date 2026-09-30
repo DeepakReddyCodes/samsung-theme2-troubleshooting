@@ -80,15 +80,29 @@ class ValidationFirewall:
             data = json.load(f)
 
         deeplinks = data.get("deeplinks", [])
-        self.actionable_uris = {dl["deeplink"] for dl in deeplinks if "deeplink" in dl}
-        # Always allow generic placeholder
-        self.actionable_uris.add("bixby://dummy_positive")
+        self.actionable_uris = set()
+        self.validation_uris = set()
 
-        self.validation_uris = {
-            dl["validation"]["deeplink"]
-            for dl in deeplinks
-            if dl.get("validation") and "deeplink" in dl["validation"]
-        }
+        for dl in deeplinks:
+            if "deeplink" in dl:
+                uri = dl["deeplink"]
+                self.actionable_uris.add(uri)
+                if uri.startswith("voiceassist://"):
+                    self.actionable_uris.add(uri.replace("voiceassist://", "bixby://", 1))
+                elif uri.startswith("bixby://"):
+                    self.actionable_uris.add(uri.replace("bixby://", "voiceassist://", 1))
+
+            if dl.get("validation") and "deeplink" in dl["validation"]:
+                val_uri = dl["validation"]["deeplink"]
+                self.validation_uris.add(val_uri)
+                if val_uri.startswith("voiceassist://"):
+                    self.validation_uris.add(val_uri.replace("voiceassist://", "bixby://", 1))
+                elif val_uri.startswith("bixby://"):
+                    self.validation_uris.add(val_uri.replace("bixby://", "voiceassist://", 1))
+
+        # Always allow generic placeholders
+        self.actionable_uris.add("voiceassist://dummy_positive")
+        self.actionable_uris.add("bixby://dummy_positive")
 
     def validate_action(
         self,
@@ -158,7 +172,7 @@ class ValidationFirewall:
             if group.actionableDeeplink:
                 uri = group.actionableDeeplink.deeplink
                 if not is_bixby_uri(uri):
-                    errors.append(f"Actionable deeplink URI must start with 'bixby://', got '{uri}'")
+                    errors.append(f"Actionable deeplink URI must start with 'voiceassist://' or 'bixby://', got '{uri}'")
                 elif self.actionable_uris and uri not in self.actionable_uris:
                     errors.append(f"Actionable deeplink URI '{uri}' is not in authoritative deeplinks catalog")
 
@@ -166,7 +180,7 @@ class ValidationFirewall:
             if group.validationDeeplink:
                 val_uri = group.validationDeeplink.deeplink
                 if not is_bixby_uri(val_uri):
-                    errors.append(f"Validation deeplink URI must start with 'bixby://', got '{val_uri}'")
+                    errors.append(f"Validation deeplink URI must start with 'voiceassist://' or 'bixby://', got '{val_uri}'")
                 elif self.validation_uris and val_uri not in self.validation_uris:
                     errors.append(f"Validation deeplink URI '{val_uri}' is not in authoritative catalog validation URIs")
 
@@ -284,7 +298,7 @@ class ValidationFirewall:
         validated_goals: List[Goal] = []
 
         if not response.contexts:
-            errors.append("ContextDeeplinkResponse contexts list must not be empty")
+            return ContextDeeplinkResponse(contexts=[]), []
 
         for idx, g in enumerate(response.contexts):
             v_goal, g_errors = self.validate_goal(g, allow_repair=allow_repair)

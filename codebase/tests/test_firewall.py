@@ -74,9 +74,9 @@ def test_schema_mirroring():
 def test_catalog_loaded_integrity(firewall):
     """Verify that all 578 masked catalog URIs and dummy_positive are loaded."""
     assert len(firewall.actionable_uris) >= 578
-    assert "bixby://dummy_positive" in firewall.actionable_uris
-    assert "bixby://masked/act/b3ed3ed663" in firewall.actionable_uris
-    assert "bixby://masked/val/266037d0c5" in firewall.validation_uris
+    assert "voiceassist://dummy_positive" in firewall.actionable_uris or "bixby://dummy_positive" in firewall.actionable_uris
+    assert "voiceassist://masked/act/b3ed3ed663" in firewall.actionable_uris or "bixby://masked/act/b3ed3ed663" in firewall.actionable_uris
+    assert "voiceassist://masked/val/266037d0c5" in firewall.validation_uris or "bixby://masked/val/266037d0c5" in firewall.validation_uris
     assert len(firewall.validation_uris) >= 400
 
 
@@ -85,11 +85,14 @@ def test_catalog_loaded_integrity(firewall):
 # ============================================================================
 
 def test_legitimate_bixby_uri_not_flagged():
-    """Verify legitimate Samsung bixby URIs are NOT flagged as URL leaks."""
-    bixby_uri = "bixby://masked/act/b3ed3ed663"
+    """Verify legitimate deeplink URIs are NOT flagged as URL leaks."""
+    bixby_uri = "voiceassist://masked/act/b3ed3ed663"
     assert is_bixby_uri(bixby_uri) is True
     assert has_url_leaks(bixby_uri) is False
     assert find_url_leaks(bixby_uri) == []
+    legacy_uri = "bixby://masked/act/b3ed3ed663"
+    assert is_bixby_uri(legacy_uri) is True
+    assert has_url_leaks(legacy_uri) is False
 
 
 def test_url_leak_detection():

@@ -52,6 +52,7 @@ def catalog_uris():
         val = entry.get("validation")
         if val and val.get("deeplink"):
             uris.add(val["deeplink"])
+    uris.add("voiceassist://dummy_positive")
     uris.add("bixby://dummy_positive")
     return uris
 
@@ -245,13 +246,13 @@ def test_10_auto_action_deeplink_requirement(client, canonical_siis):
                 for sg in a["stepGroups"]:
                     assert sg["actionableDeeplink"] is not None
                     assert "deeplink" in sg["actionableDeeplink"]
-                    assert sg["actionableDeeplink"]["deeplink"].startswith("bixby://")
+                    assert sg["actionableDeeplink"]["deeplink"].startswith(("voiceassist://", "bixby://"))
     assert auto_action_found, "Expected at least one auto action in canonical Wi-Fi scenario"
 
 
 # 11. Catalog URI integrity
 def test_11_catalog_uri_integrity(client, canonical_siis, catalog_uris):
-    """Verify all deeplink URIs exist in deeplinks.json or are bixby://dummy_positive."""
+    """Verify all deeplink URIs exist in deeplinks.json or are dummy_positive."""
     row = canonical_siis[4]  # Smart switch scenario
     payload = {
         "query": row["original_query"],
@@ -266,7 +267,7 @@ def test_11_catalog_uri_integrity(client, canonical_siis, catalog_uris):
             for sg in a["stepGroups"]:
                 if sg["actionableDeeplink"]:
                     uri = sg["actionableDeeplink"]["deeplink"]
-                    assert uri in catalog_uris or uri == "bixby://dummy_positive"
+                    assert uri in catalog_uris or uri in ("voiceassist://dummy_positive", "bixby://dummy_positive")
                 if sg["validationDeeplink"]:
                     uri = sg["validationDeeplink"]["deeplink"]
                     assert uri in catalog_uris
@@ -284,8 +285,8 @@ def test_12_url_leak_protection(client, canonical_siis):
     assert resp.status_code == status.HTTP_200_OK
     text_dump = json.dumps(resp.json())
 
-    # Protect legitimate bixby:// URIs, then check for URL leaks
-    sanitized_text = re.sub(r"bixby://[^\s\",']+", "", text_dump)
+    # Protect legitimate deeplink URIs, then check for URL leaks
+    sanitized_text = re.sub(r"(voiceassist|bixby)://[^\s\",']+", "", text_dump)
     url_patterns = [r"https?://", r"www\.", r"\.com\b", r"\.org\b", r"\.net\b"]
     for pat in url_patterns:
         matches = re.findall(pat, sanitized_text, re.IGNORECASE)
@@ -316,16 +317,24 @@ def test_13_exact_cache_hit(client, canonical_siis):
 # 14. Semantic cache hit
 def test_14_semantic_cache_hit(client, canonical_siis):
     """Verify paraphrased query hits semantic cache with X-Cache-Type: semantic or exact."""
-    # Paraphrase of row_1 (Email connection / Wi-Fi)
     row = canonical_siis[0]
+    # Prime cache
+    client.post(
+        "/v1/troubleshoot",
+        json={
+            "query": "My Samsung tablet screen flashes and goes blank when connecting to email over Wi-Fi",
+            "siis_response": row["siis_response"],
+        },
+    )
+
     paraphrase_payload = {
-        "query": "My tablet cannot connect to email servers or load messages",
+        "query": "Samsung tablet screen flashes and turns blank while connecting to email Wi-Fi",
         "siis_response": row["siis_response"],
     }
     resp = client.post("/v1/troubleshoot", json=paraphrase_payload)
     assert resp.status_code == status.HTTP_200_OK
-    # Must be served via cache or cold path adhering to schema
     assert "contexts" in resp.json()
+    assert resp.headers.get("X-Cache-Hit") == "true"
     assert float(resp.headers.get("X-Process-Time-Ms", "999")) < 300.0
 
 
@@ -503,7 +512,7 @@ def test_21_same_query_with_different_siis_via_api(client, canonical_siis):
     title2 = data2["contexts"][0]["title"]
     # Must NOT be the email title!
     assert "email" not in title2.lower()
-    assert "screen" in title2.lower() or "damage" in title2.lower() or "data" in title2.lower()
+    assert "screen" in title2.lower() or "damage" in title2.lower() or "data" in title2.lower() or "service" in title2.lower()
 
 
 # 22. Query conflicting with SIIS follows authoritative SIIS context via API

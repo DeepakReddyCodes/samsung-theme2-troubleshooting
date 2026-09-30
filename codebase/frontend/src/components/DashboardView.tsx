@@ -12,6 +12,8 @@ import {
   Terminal,
   CheckCircle2,
   XCircle,
+  Sparkles,
+  Download,
 } from 'lucide-react';
 import { getTelemetryHistory, clearTelemetryHistory } from '../services/api';
 import { HealthResponse, TelemetryMetadata } from '../types';
@@ -57,14 +59,34 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <code>/v1/troubleshoot</code> response headers.
           </p>
         </div>
-        <button
-          className="btn-refresh-telemetry"
-          onClick={onRefreshHealth}
-          disabled={healthLoading}
-        >
-          <RefreshCw size={14} className={healthLoading ? 'icon-spin' : ''} />
-          <span>Refresh API State</span>
-        </button>
+        <div className="dashboard-actions-row">
+          <a
+            href="/v1/export/output.json"
+            download="output.json"
+            className="btn-export-telemetry"
+            title="Download official output.json"
+          >
+            <Download size={14} />
+            <span>Download output.json</span>
+          </a>
+          <a
+            href="/v1/export/results.jsonl"
+            download="results.jsonl"
+            className="btn-export-telemetry"
+            title="Download official results.jsonl"
+          >
+            <Download size={14} />
+            <span>Download results.jsonl</span>
+          </a>
+          <button
+            className="btn-refresh-telemetry"
+            onClick={onRefreshHealth}
+            disabled={healthLoading}
+          >
+            <RefreshCw size={14} className={healthLoading ? 'icon-spin' : ''} />
+            <span>Refresh API State</span>
+          </button>
+        </div>
       </div>
 
       {/* KPI Cards Grid */}
@@ -208,6 +230,37 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
           </div>
         </div>
+
+        {/* NBE Innovation Feature Card */}
+        <div className="dashboard-section-card">
+          <div className="section-card-header">
+            <Sparkles size={18} className="text-purple" />
+            <h3>Next-Best-Evidence (NBE) & Information Gain</h3>
+          </div>
+          <div className="guardrails-list">
+            <div className="guardrail-item">
+              <CheckCircle2 size={16} className="text-purple" />
+              <div>
+                <strong>Active Disambiguation Layer:</strong>
+                <p>Calculates Shannon Entropy H(H) = -&Sigma; P(h) log&sub2; P(h) over hypotheses.</p>
+              </div>
+            </div>
+            <div className="guardrail-item">
+              <CheckCircle2 size={16} className="text-purple" />
+              <div>
+                <strong>Expected Information Gain (EIG):</strong>
+                <p>Ranks candidate diagnostic tests: Utility(E) = [EIG(E) / Cost(E)] &times; Availability(E).</p>
+              </div>
+            </div>
+            <div className="guardrail-item">
+              <CheckCircle2 size={16} className="text-purple" />
+              <div>
+                <strong>Sufficiency Threshold Gate:</strong>
+                <p>Commits to actionable resolution only when Bayesian confidence &ge; 85%.</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Live Request Log Table */}
@@ -236,7 +289,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   <th>Timestamp</th>
                   <th>Cache Status</th>
                   <th>Hit Type</th>
-                  <th>Extraction Path</th>
+                  <th>NBE Disambiguation</th>
                   <th>Backend Latency</th>
                   <th>Socket Roundtrip</th>
                 </tr>
@@ -258,7 +311,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       <code>{row.cacheType}</code>
                     </td>
                     <td>
-                      <code>{row.extractionPath}</code>
+                      <span className="text-purple" style={{ fontWeight: 600 }}>
+                        {row.nbeEntropy !== undefined ? `${row.nbeEntropy.toFixed(2)} bits` : '0.00 bits'}
+                      </span>
+                      {row.nbeConfidence !== undefined && (
+                        <span style={{ fontSize: '0.8rem', color: '#94a3b8', marginLeft: '6px' }}>
+                          ({Math.round(row.nbeConfidence * 100)}% cert)
+                        </span>
+                      )}
                     </td>
                     <td>
                       <strong>{row.processTimeMs} ms</strong>

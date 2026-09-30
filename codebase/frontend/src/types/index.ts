@@ -75,6 +75,10 @@ export interface TelemetryMetadata {
   roundtripMs: number;
   timestamp: string;
   scenarioId?: string;
+  nbeSufficient?: boolean;
+  nbeEntropy?: number;
+  nbeConfidence?: number;
+  nbeEig?: number;
 }
 
 export interface TroubleshootingResult {

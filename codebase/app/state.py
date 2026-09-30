@@ -10,9 +10,21 @@ Responsible for the orchestrated startup sequence:
 7. Mark application ready.
 """
 import logging
+import os
 from pathlib import Path
 import time
 from typing import Any, Dict, Optional
+
+# Automatically load .env if available
+try:
+    from dotenv import load_dotenv
+    # Search in codebase root and repo root
+    load_dotenv()
+    repo_root_env = Path(__file__).resolve().parent.parent.parent / ".env"
+    if repo_root_env.exists():
+        load_dotenv(repo_root_env)
+except Exception:
+    pass
 
 from app.cache.prewarm import prewarm_canonical_scenarios
 from app.cache.semantic_cache import FastPathSemanticCache
@@ -23,6 +35,7 @@ from app.services.extractor.deterministic_extractor import DeterministicFallback
 from app.services.extractor.engine import ColdPathExtractionEngine
 from app.services.extractor.gemini_extractor import GeminiExtractor
 from app.services.extractor.grounding_checker import GroundingChecker
+from app.services.query_enrichment import QueryEnricher
 
 logger = logging.getLogger(__name__)
 
@@ -88,9 +101,10 @@ class ApplicationState:
         )
         logger.info(f"Canonical cache prewarmed: {self.prewarm_stats}")
 
-        # 7. Initialize Cold-Path Engine with grounding checker & cache writeback
+        # 7. Initialize Cold-Path Engine with two-stage LLM, grounding checker & cache writeback
         self.cold_engine = ColdPathExtractionEngine(
             provider=GeminiExtractor(fallback=DeterministicFallbackExtractor()),
+            enricher=QueryEnricher(),
             resolver=self.resolver,
             firewall=self.firewall,
             cache=self.cache,

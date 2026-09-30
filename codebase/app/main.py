@@ -58,6 +58,12 @@ app.add_middleware(
         "X-Cache-Hit",
         "X-Cache-Type",
         "X-Extraction-Path",
+        "X-Stage1-Provider",
+        "X-Stage2-Provider",
+        "X-NBE-Sufficient",
+        "X-NBE-Entropy",
+        "X-NBE-Confidence",
+        "X-NBE-EIG",
     ],
 )
 
@@ -210,6 +216,10 @@ async def troubleshoot(
             response.headers["X-Cache-Hit"] = "true"
             response.headers["X-Cache-Type"] = telemetry.get("hit_type", "exact")
             response.headers["X-Extraction-Path"] = "cache"
+            response.headers["X-NBE-Sufficient"] = "true"
+            response.headers["X-NBE-Entropy"] = "0.000"
+            response.headers["X-NBE-Confidence"] = "1.00"
+            response.headers["X-NBE-EIG"] = "0.0000"
             return validated_plan
         else:
             logger.warning(f"Cached plan failed validation ({errors}). Routing to cold extraction.")
@@ -229,9 +239,52 @@ async def troubleshoot(
     response.headers["X-Process-Time-Ms"] = f"{process_ms:.3f}"
     response.headers["X-Cache-Hit"] = "false"
     response.headers["X-Cache-Type"] = "miss"
-    response.headers["X-Extraction-Path"] = "cold_path"
+    response.headers["X-Extraction-Path"] = getattr(app_state.cold_engine, "last_provider_used", "cold_path")
+    response.headers["X-Stage1-Provider"] = getattr(app_state.cold_engine, "last_stage1_provider", "deterministic")
+    response.headers["X-Stage2-Provider"] = getattr(app_state.cold_engine, "last_stage2_provider", "deterministic")
+
+    # Expose NBE Disambiguation Telemetry
+    nbe_res = getattr(app_state.cold_engine, "last_nbe_result", None)
+    if nbe_res:
+        response.headers["X-NBE-Sufficient"] = "true" if nbe_res.is_sufficient else "false"
+        response.headers["X-NBE-Entropy"] = f"{nbe_res.current_entropy:.3f}"
+        response.headers["X-NBE-Confidence"] = f"{nbe_res.top_hypothesis_confidence:.2f}"
+        response.headers["X-NBE-EIG"] = f"{nbe_res.selected_eig:.4f}"
+    else:
+        response.headers["X-NBE-Sufficient"] = "true"
+        response.headers["X-NBE-Entropy"] = "0.000"
+        response.headers["X-NBE-Confidence"] = "1.00"
+        response.headers["X-NBE-EIG"] = "0.0000"
 
     return final_plan
+
+
+# =====================================================================
+# Official Result Export Endpoints
+# =====================================================================
+@app.get("/v1/export/output.json", tags=["Export"])
+async def export_output_json():
+    """Download official output.json containing validated troubleshooting results."""
+    root_dir = Path(__file__).resolve().parent.parent
+    p = root_dir / "results" / "output.json"
+    if not p.exists():
+        p = root_dir / "output.json"
+    if not p.exists():
+        sample_p = root_dir / "sample_output.json"
+        if sample_p.exists():
+            return FileResponse(sample_p, media_type="application/json", filename="output.json")
+        raise HTTPException(status_code=404, detail="output.json not found. Run scripts/generate_results.py first.")
+    return FileResponse(p, media_type="application/json", filename="output.json")
+
+
+@app.get("/v1/export/results.jsonl", tags=["Export"])
+async def export_results_jsonl():
+    """Download official results.jsonl containing canonical troubleshooting lines."""
+    root_dir = Path(__file__).resolve().parent.parent
+    p = root_dir / "results" / "results.jsonl"
+    if not p.exists():
+        raise HTTPException(status_code=404, detail="results.jsonl not found. Run scripts/generate_results.py first.")
+    return FileResponse(p, media_type="application/x-ndjson", filename="results.jsonl")
 
 
 # =====================================================================

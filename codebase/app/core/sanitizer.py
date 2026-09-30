@@ -19,23 +19,23 @@ _HTML_LINK_PATTERN = re.compile(r"<a\s+[^>]*href=[\"'][^\"']*[\"'][^>]*>(.*?)</a
 
 
 def is_bixby_uri(text: str) -> bool:
-    """Return True if text is a legitimate Samsung bixby URI."""
+    """Return True if text is a legitimate Settings deeplink URI (voiceassist:// or bixby://)."""
     if not isinstance(text, str):
         return False
     stripped = text.strip()
-    return stripped.startswith("bixby://")
+    return stripped.startswith("voiceassist://") or stripped.startswith("bixby://")
 
 
 def find_url_leaks(text: str) -> List[Tuple[str, str]]:
     """Scan text for any web URL leaks.
     
     Returns a list of (leak_type, matched_string) tuples.
-    If the text itself is a legitimate bixby URI, it is not flagged.
+    If the text itself is a legitimate deeplink URI, it is not flagged.
     """
     if not isinstance(text, str) or not text:
         return []
 
-    # Legitimate Samsung deeplinks are never web URL leaks
+    # Legitimate deeplinks are never web URL leaks
     if is_bixby_uri(text):
         return []
 
@@ -61,12 +61,12 @@ def find_url_leaks(text: str) -> List[Tuple[str, str]]:
 
     # Check for bare domain names with common TLDs (e.g., samsung.com)
     for match in _DOMAIN_PATTERN.finditer(text):
-        # Exclude matches that are part of bixby package identifiers like com.android.settings
+        # Exclude matches that are part of package identifiers like com.android.settings
         matched_str = match.group(0)
         start_idx = match.start()
-        # Look behind to ensure it's not prefixed by 'bixby://' or a package path
-        prefix = text[max(0, start_idx - 10):start_idx]
-        if "bixby://" in prefix or prefix.endswith("/"):
+        # Look behind to ensure it's not prefixed by 'voiceassist://', 'bixby://', or a package path
+        prefix = text[max(0, start_idx - 16):start_idx]
+        if "voiceassist://" in prefix or "bixby://" in prefix or prefix.endswith("/"):
             continue
         leaks.append(("domain_url", matched_str))
 
@@ -103,8 +103,8 @@ def sanitize_text(text: str) -> str:
     # Remove bare domain URLs (e.g. samsung.com/support)
     def _domain_cleaner(match: re.Match) -> str:
         start_idx = match.start()
-        prefix = cleaned[max(0, start_idx - 10):start_idx]
-        if "bixby://" in prefix or prefix.endswith("/"):
+        prefix = cleaned[max(0, start_idx - 16):start_idx]
+        if "voiceassist://" in prefix or "bixby://" in prefix or prefix.endswith("/"):
             return match.group(0)
         return ""
 

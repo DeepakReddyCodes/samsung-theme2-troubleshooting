@@ -1,5 +1,5 @@
 import React from 'react';
-import { Zap, Clock, Database, GitBranch, ShieldCheck } from 'lucide-react';
+import { Zap, Clock, Database, GitBranch, ShieldCheck, Sparkles } from 'lucide-react';
 import { TelemetryMetadata } from '../types';
 
 interface TelemetryHUDProps {
@@ -54,6 +54,16 @@ export const TelemetryHUD: React.FC<TelemetryHUDProps> = ({ telemetry, score }) 
             Path: <strong>{telemetry.extractionPath}</strong>
           </span>
         </div>
+
+        {/* NBE Information Gain / Entropy Badge */}
+        {telemetry.nbeEntropy !== undefined && (
+          <div className="telemetry-item telemetry-item-nbe" title="Next-Best-Evidence Information Theoretic Disambiguation">
+            <Sparkles size={14} className="text-purple" />
+            <span>
+              NBE Entropy: <strong>{telemetry.nbeEntropy.toFixed(2)} bits</strong> (EIG: {telemetry.nbeEig?.toFixed(3) || '0.000'})
+            </span>
+          </div>
+        )}
 
         {/* Score */}
         {score !== undefined && (
