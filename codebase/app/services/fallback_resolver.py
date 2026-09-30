@@ -44,37 +44,13 @@ def extract_concrete_screen_name(intent: TroubleshootingIntent) -> Optional[str]
     """Extract the most concrete Samsung Settings screen name from intent steps or action name."""
     text_corpus = f"{intent.screen_hint} {intent.action_name} {' '.join(intent.steps)}"
 
-    # 1. Look for explicit 'Tap on <Screen>', 'Select <Screen>', 'Go to <Screen>' patterns
-    pattern = re.compile(
-        r"(?:tap on|tap|select|go to|open|navigate to and open|navigate to)\s+([A-Z][a-zA-Z0-9\s&-]+?)(?=[.,;]|and then|\btap\b|\bselect\b|$)",
-        re.IGNORECASE,
-    )
-    matches = pattern.findall(text_corpus)
-    for m in matches:
-        candidate = m.strip()
-        # Clean filler words
-        candidate = re.sub(r"^(and|the|your)\s+", "", candidate, flags=re.IGNORECASE).strip()
-        # If candidate matches a known screen or looks like a valid screen name (1-4 words)
-        for known in KNOWN_SETTINGS_SCREENS:
-            if known.lower() == candidate.lower() or known.lower() in candidate.lower():
-                return known
-        words = candidate.split()
-        # We must not invent targets. Returning something like "Device settings" because it passed this regex is dangerous.
-        # Only return candidate if it is a strong match, e.g. capitalized or matches a known word.
-        # For W03 strict policy, we simply shouldn't blindly trust `candidate.capitalize()`.
-        # However, to avoid breaking other legitimate screens not in KNOWN_SETTINGS_SCREENS but explicitly navigated to
-        if 1 <= len(words) <= 3 and candidate.lower() not in {"settings", "it", "this", "device settings", "device", "menu"}:
-            return candidate.capitalize()
-
-    # 2. Check for presence of known screen keywords in the text corpus
+    # 1. Check for presence of known authoritative screen keywords in the text corpus
     for known in KNOWN_SETTINGS_SCREENS:
         if re.search(r"\b" + re.escape(known) + r"\b", text_corpus, re.IGNORECASE):
             return known
 
-    # 3. Fallback to core action noun
-    action_words = re.findall(r"\b[\w'-]+\b", intent.action_name)
-    cleaned_words = [w for w in action_words if w.lower() not in {"configure", "set", "settings", "to", "and", "the"}]
-
+    # We must not invent targets from arbitrary action nouns.
+    # If it's not explicitly an authoritative known Settings screen, we return None.
     return None
 
 

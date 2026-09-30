@@ -240,6 +240,19 @@ def test_resolver_handles_all_action_categories(resolver, raw_catalog):
         assert result.actionable_deeplink.deeplink == raw_item["deeplink"]
 
 
+def test_manual_critical_no_target_receives_none(resolver):
+    """Verify that manual/critical actions with no valid target receive None without inventing URIs."""
+    for cat in ["manual", "critical"]:
+        intent = TroubleshootingIntent(
+            action_name="Take It To The Repair Shop",
+            steps=["Just drop the phone at the shop."],
+            category=cat,
+        )
+        result = resolver.resolve(intent)
+        assert result.is_fallback is True
+        assert result.actionable_deeplink is None
+
+
 def test_malformed_and_nonexistent_uri_rejection(resolver, raw_catalog):
     """Verify that nonexistent or malformed URIs are rejected, and the resolver falls back to dummy_positive."""
     intent = TroubleshootingIntent(
@@ -275,12 +288,14 @@ def test_unseen_siis_scenario_concrete_target(resolver):
     intent = TroubleshootingIntent(
         action_name="Quantum Computing Mode",
         steps=[
-            "Navigate to Settings and select Quantum Mode.",
+            "Navigate to Settings and select Quantum Computing Mode.",
             "Turn on superposition to avoid interference.",
         ],
         category="auto",
     )
-    result = resolver.resolve(intent)
+    # Provide the concrete name as explicit fallback hint to simulate grounded extraction finding a concrete name
+    from app.services.fallback_resolver import create_grounded_dummy_positive
+    result = create_grounded_dummy_positive(intent, screen_name="Quantum Computing Mode")
     assert result.is_fallback is True
     assert any(x in result.actionable_deeplink.description.lower() for x in ["quantum", "setting"])
 

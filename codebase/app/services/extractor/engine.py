@@ -125,15 +125,14 @@ class ColdPathExtractionEngine:
             actionable_dl = None
             val_dl = None
 
-            if category == actionCategory.auto:
-                resolution = self.resolver.resolve_from_step_group(
-                    action_name=ext_act.action_name,
-                    steps=grounded_steps,
-                    screen_hint=ext_act.screen_hint or "",
-                    category="auto",
-                )
-                actionable_dl = resolution.actionable_deeplink
-                val_dl = resolution.validation_deeplink
+            resolution = self.resolver.resolve_from_step_group(
+                action_name=ext_act.action_name,
+                steps=grounded_steps,
+                screen_hint=ext_act.screen_hint or "",
+                category=category.value,
+            )
+            actionable_dl = resolution.actionable_deeplink
+            val_dl = resolution.validation_deeplink
 
             # Ensure compliant 5-7 word description starting with 'It will'
             desc_str = rewrite_action_description(ext_act.description, ext_act.action_name)
