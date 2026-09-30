@@ -389,7 +389,6 @@ def prewarm_canonical_scenarios(
             response=plan,
             siis_response=siis_resp,
             scenario_id=sc_id,
-            validate=False,  # Already validated
             intent_vector=intent_vec,
             rebuild_matrix=False,
         )
@@ -400,7 +399,6 @@ def prewarm_canonical_scenarios(
             response=plan,
             siis_response=None,
             scenario_id=sc_id,
-            validate=False,
             intent_vector=intent_vec,
             rebuild_matrix=False,
         )

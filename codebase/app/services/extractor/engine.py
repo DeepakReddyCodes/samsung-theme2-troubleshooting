@@ -60,20 +60,25 @@ class ColdPathExtractionEngine:
     ) -> Tuple[str, str]:
         """Normalize SIIS input into clean (title, content) tuple."""
         if not siis_response:
-            return "General Device Support", "Check Samsung device settings and restart phone if needed."
+            return "", ""
 
         if isinstance(siis_response, dict):
-            title = str(siis_response.get("title", "")).strip() or "Device Support"
-            content = str(siis_response.get("content", "")).strip() or title
+            title = str(siis_response.get("title", "")).strip()
+            content = str(siis_response.get("content", "")).strip()
+            if not content:
+                return "", ""
             return title, content
 
         if isinstance(siis_response, str):
-            lines = [l.strip() for l in siis_response.strip().split("\n") if l.strip()]
-            title = lines[0] if lines else "Device Support"
-            content = siis_response.strip()
+            siis_str = siis_response.strip()
+            if not siis_str:
+                return "", ""
+            lines = [l.strip() for l in siis_str.split("\n") if l.strip()]
+            title = lines[0] if lines else ""
+            content = siis_str
             return title, content
 
-        return "Device Support", str(siis_response)
+        return "", ""
 
     def extract_and_build(
         self,
@@ -153,31 +158,9 @@ class ColdPathExtractionEngine:
                 )
             )
 
-        # If no actions survived grounding, fallback to grounded overview
+        # If no actions survived grounding, return empty response
         if not built_actions:
-            fallback_steps, _ = self.grounding_checker.filter_grounded_steps(
-                steps=["Navigate to and open device Settings.", f"Check {topic} configuration."],
-                siis_text=f"{siis_title}\n{siis_content}",
-            )
-            if not fallback_steps:
-                lines = [l.strip() for l in siis_content.split("\n") if l.strip()]
-                first_line = lines[0] if lines else "Check device settings and configurations."
-                fallback_steps = [first_line[:100].rstrip(".") + "."]
-
-            built_actions.append(
-                Action(
-                    actionName=f"Check {topic} Settings",
-                    description=f"It will configure your {topic.lower()} settings",
-                    category=actionCategory.manual,
-                    stepGroups=[
-                        StepGroup(
-                            steps=[sanitize_text(s) for s in fallback_steps],
-                            actionableDeeplink=None,
-                            validationDeeplink=None,
-                        )
-                    ],
-                )
-            )
+            return ContextDeeplinkResponse(contexts=[])
 
         # 4. Sort Actions strictly: auto -> manual -> critical
         built_actions.sort(
@@ -205,7 +188,6 @@ class ColdPathExtractionEngine:
                 response=final_response,
                 siis_response=siis_response,
                 scenario_id=scenario_id,
-                validate=False,  # Already validated
             )
 
         return final_response
