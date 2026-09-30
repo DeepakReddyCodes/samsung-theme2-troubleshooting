@@ -77,8 +77,16 @@ class NBEEvaluationEngine:
 
         observations = {o.evidence_id: o.is_true for o in request.observations}
 
+        # Validate referential integrity for observations against available evidence if needed,
+        # or we just validate likelihoods. The instruction says: "every likelihood evidence_id must refer to a declared available evidence item or explicitly declared observed-evidence item".
+        all_evidence_ids = seen_evidence | seen_observations
+
         likelihoods = {} # likelihoods[e_id][h_id] = P(E=True|H)
         for lh in request.likelihoods:
+            if lh.hypothesis_id not in priors:
+                raise ValueError(f"Likelihood references unknown hypothesis_id: {lh.hypothesis_id}")
+            if lh.evidence_id not in all_evidence_ids:
+                raise ValueError(f"Likelihood references unknown evidence_id: {lh.evidence_id}")
             if lh.evidence_id not in likelihoods:
                 likelihoods[lh.evidence_id] = {}
             if lh.hypothesis_id in likelihoods[lh.evidence_id]:
@@ -110,10 +118,23 @@ class NBEEvaluationEngine:
             if candidate.id in observations:
                 continue # Already observed
 
+            # Ensure complete likelihood matrix for this candidate over all hypotheses
+            candidate_likelihoods = likelihoods.get(candidate.id, {})
+            has_missing_likelihoods = False
+            for h_id in current_posteriors:
+                if h_id not in candidate_likelihoods:
+                    has_missing_likelihoods = True
+                    break
+
+            # If we don't have likelihoods for every hypothesis, we cannot evaluate its info gain accurately.
+            # (We do not fabricate 0.5 likelihoods for candidate evaluation)
+            if has_missing_likelihoods:
+                continue
+
             # Calculate P(Candidate=True) and P(Candidate=False)
             p_e_true = 0.0
             for h_id, p_h in current_posteriors.items():
-                p_e_given_h = likelihoods.get(candidate.id, {}).get(h_id, 0.5)
+                p_e_given_h = candidate_likelihoods[h_id]
                 p_e_true += p_h * p_e_given_h
 
             p_e_false = 1.0 - p_e_true

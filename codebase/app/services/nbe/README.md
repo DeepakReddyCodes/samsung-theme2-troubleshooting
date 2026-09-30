@@ -47,3 +47,9 @@ This module is currently isolated for Workstream W05E. Its intended place in the
 - `models.py`: Data structures (Hypothesis, Evidence, NBERequest, NBEResponse).
 - `engine.py`: The deterministic calculation logic.
 - `tests/test_nbe.py`: Mathematical correctness unit tests.
+## Current Implementation Semantics
+- The sufficiency threshold of `0.9` is an ENGINEERING DECISION, not a Samsung requirement.
+- EIG computation relies on a numerical tolerance (`EIG_TOLERANCE=1e-9`) to filter out floating-point noise around zero rather than an arbitrary positive selection cutoff.
+- Any evidence evaluating to missing or incomplete likelihood matrices across competing hypotheses is explicitly excluded. The engine does not fabricate `0.5` prior assignments for missing target mappings.
+- Deterministic tie-breaking enforces stable selection logic by picking identical tied outputs according to alphabetic ID sorting.
+- Zero-cost evidence natively scales to `+inf` utility only when mathematical EIG > numerical tolerance noise, and correctly evaluates to `0` otherwise.

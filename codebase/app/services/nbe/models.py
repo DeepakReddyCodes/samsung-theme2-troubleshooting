@@ -5,13 +5,13 @@ class Evidence(BaseModel):
     """Represents a piece of evidence that can be acquired."""
     id: str = Field(..., description="Unique identifier for the evidence")
     description: str = Field(..., description="Human-readable description of the evidence")
-    cost: float = Field(1.0, ge=0.0, description="Cost of acquiring this evidence (e.g., time, annoyance)")
+    cost: float = Field(1.0, ge=0.0, allow_inf_nan=False, description="Cost of acquiring this evidence (e.g., time, annoyance)")
 
 class Hypothesis(BaseModel):
     """Represents a potential underlying state or problem."""
     id: str = Field(..., description="Unique identifier for the hypothesis")
     description: str = Field(..., description="Human-readable description of the hypothesis")
-    prior_probability: float = Field(..., ge=0.0, le=1.0, description="Initial probability of this hypothesis")
+    prior_probability: float = Field(..., ge=0.0, le=1.0, allow_inf_nan=False, description="Initial probability of this hypothesis")
 
 class EvidenceObservation(BaseModel):
     """Represents an observation of a piece of evidence."""
@@ -22,7 +22,7 @@ class EvidenceLikelihood(BaseModel):
     """Represents P(Evidence | Hypothesis) for a specific evidence and hypothesis."""
     evidence_id: str
     hypothesis_id: str
-    probability_true: float = Field(..., ge=0.0, le=1.0, description="P(Evidence=True | Hypothesis)")
+    probability_true: float = Field(..., ge=0.0, le=1.0, allow_inf_nan=False, description="P(Evidence=True | Hypothesis)")
 
 class NBERequest(BaseModel):
     """Input to the Next-Best-Evidence engine."""
@@ -30,7 +30,7 @@ class NBERequest(BaseModel):
     available_evidence: List[Evidence] = Field(..., description="Evidence candidates that could be acquired")
     observations: List[EvidenceObservation] = Field(default_factory=list, description="Currently observed evidence")
     likelihoods: List[EvidenceLikelihood] = Field(..., description="Conditional probabilities P(E|H)")
-    sufficiency_threshold: float = Field(0.9, ge=0.0, le=1.0, description="Posterior probability required to consider a hypothesis sufficient. ENGINEERING DECISION, not a Samsung requirement")
+    sufficiency_threshold: float = Field(0.9, ge=0.0, le=1.0, allow_inf_nan=False, description="Posterior probability required to consider a hypothesis sufficient. ENGINEERING DECISION, not a Samsung requirement")
 
 class SelectedEvidence(BaseModel):
     evidence_id: str

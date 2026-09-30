@@ -394,7 +394,7 @@ def test_engine_duplicate_ids(engine):
     with pytest.raises(ValueError, match="Duplicate likelihood mapping"):
         engine.evaluate(NBERequest(
             hypotheses=[Hypothesis(id="h1", description="Desc", prior_probability=1.0)],
-            available_evidence=[],
+            available_evidence=[Evidence(id="e1", description="Desc", cost=1.0)],
             likelihoods=[
                 EvidenceLikelihood(evidence_id="e1", hypothesis_id="h1", probability_true=0.8),
                 EvidenceLikelihood(evidence_id="e1", hypothesis_id="h1", probability_true=0.5)
@@ -436,3 +436,116 @@ def test_engine_posteriors_sum_to_one(engine):
     }
     posteriors = engine.get_posterior_probabilities(priors, observations, likelihoods)
     assert sum(posteriors.values()) == pytest.approx(1.0)
+
+def test_pydantic_nan_inf():
+    with pytest.raises(ValidationError):
+        Hypothesis(id="h1", description="desc", prior_probability=float('nan'))
+    with pytest.raises(ValidationError):
+        Hypothesis(id="h1", description="desc", prior_probability=float('inf'))
+    with pytest.raises(ValidationError):
+        EvidenceLikelihood(evidence_id="e1", hypothesis_id="h1", probability_true=float('nan'))
+    with pytest.raises(ValidationError):
+        Evidence(id="e1", description="desc", cost=float('inf'))
+    with pytest.raises(ValidationError):
+        NBERequest(
+            hypotheses=[Hypothesis(id="h1", description="desc", prior_probability=0.5)],
+            available_evidence=[],
+            likelihoods=[],
+            sufficiency_threshold=float('nan')
+        )
+
+def test_incomplete_candidate_likelihoods_excluded(engine):
+    req = NBERequest(
+        hypotheses=[
+            Hypothesis(id="h1", description="Problem A", prior_probability=0.5),
+            Hypothesis(id="h2", description="Problem B", prior_probability=0.5)
+        ],
+        available_evidence=[
+            Evidence(id="e1", description="Discriminative but incomplete", cost=1.0)
+        ],
+        observations=[],
+        likelihoods=[
+            EvidenceLikelihood(evidence_id="e1", hypothesis_id="h1", probability_true=0.9)
+            # Missing likelihood for h2
+        ],
+        sufficiency_threshold=0.9
+    )
+    resp = engine.evaluate(req)
+    # The candidate should be excluded, resulting in no selected evidence
+    assert resp.selected_evidence is None
+
+def test_engine_referential_integrity(engine):
+    # Invalid hypothesis reference in likelihood
+    with pytest.raises(ValueError, match="Likelihood references unknown hypothesis_id"):
+        engine.evaluate(NBERequest(
+            hypotheses=[Hypothesis(id="h1", description="Desc", prior_probability=1.0)],
+            available_evidence=[Evidence(id="e1", description="Desc", cost=1.0)],
+            likelihoods=[EvidenceLikelihood(evidence_id="e1", hypothesis_id="h2", probability_true=0.5)]
+        ))
+
+    # Invalid evidence reference in likelihood
+    with pytest.raises(ValueError, match="Likelihood references unknown evidence_id"):
+        engine.evaluate(NBERequest(
+            hypotheses=[Hypothesis(id="h1", description="Desc", prior_probability=1.0)],
+            available_evidence=[Evidence(id="e1", description="Desc", cost=1.0)],
+            likelihoods=[EvidenceLikelihood(evidence_id="e2", hypothesis_id="h1", probability_true=0.5)]
+        ))
+
+def test_tie_breaking_order_independence(engine):
+    def build_req(evidence_list, likelihoods_list):
+        return NBERequest(
+            hypotheses=[
+                Hypothesis(id="h1", description="Problem A", prior_probability=0.5),
+                Hypothesis(id="h2", description="Problem B", prior_probability=0.5)
+            ],
+            available_evidence=evidence_list,
+            observations=[],
+            likelihoods=likelihoods_list,
+            sufficiency_threshold=0.9
+        )
+
+    e1 = Evidence(id="e1", description="Ev 1", cost=1.0)
+    e2 = Evidence(id="e2", description="Ev 2", cost=1.0)
+
+    # Identical likelihoods for e1 and e2 -> identical EIG and utility
+    l1 = [
+        EvidenceLikelihood(evidence_id="e1", hypothesis_id="h1", probability_true=0.9),
+        EvidenceLikelihood(evidence_id="e1", hypothesis_id="h2", probability_true=0.1)
+    ]
+    l2 = [
+        EvidenceLikelihood(evidence_id="e2", hypothesis_id="h1", probability_true=0.9),
+        EvidenceLikelihood(evidence_id="e2", hypothesis_id="h2", probability_true=0.1)
+    ]
+
+    # Order 1: e1 then e2
+    req1 = build_req([e1, e2], l1 + l2)
+    resp1 = engine.evaluate(req1)
+
+    # Order 2: e2 then e1
+    req2 = build_req([e2, e1], l2 + l1)
+    resp2 = engine.evaluate(req2)
+
+    # Should pick "e1" both times due to deterministic ID tie-breaking (e1 < e2)
+    assert resp1.selected_evidence.evidence_id == "e1"
+    assert resp2.selected_evidence.evidence_id == "e1"
+
+def test_eig_small_positive_eig_selected(engine):
+    req = NBERequest(
+        hypotheses=[
+            Hypothesis(id="h1", description="Problem A", prior_probability=0.5),
+            Hypothesis(id="h2", description="Problem B", prior_probability=0.5)
+        ],
+        available_evidence=[
+            Evidence(id="e1", description="Barely informative", cost=1.0)
+        ],
+        observations=[],
+        likelihoods=[
+            EvidenceLikelihood(evidence_id="e1", hypothesis_id="h1", probability_true=0.501),
+            EvidenceLikelihood(evidence_id="e1", hypothesis_id="h2", probability_true=0.499)
+        ],
+        sufficiency_threshold=0.9
+    )
+
+    resp = engine.evaluate(req)
+    assert resp.selected_evidence is not None
+    assert resp.selected_evidence.eig_score > engine.EIG_TOLERANCE
