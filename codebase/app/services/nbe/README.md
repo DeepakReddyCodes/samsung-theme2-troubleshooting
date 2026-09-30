@@ -31,7 +31,7 @@ If the posterior probability of the leading hypothesis exceeds a defined thresho
 ## Edge Cases Handled
 1. **No Competing Hypotheses**: If only 1 hypothesis exists, it immediately returns `is_sufficient=True`.
 2. **Zero Information Gain**: If all available evidence fails to change the probability distribution, EIG is 0, and no evidence is selected.
-3. **Equal Utility**: Handled intrinsically by picking the first max utility (or could be randomly tied broken).
+3. **Equal Utility**: Tie breaking is explicitly deterministic, resolving tied candidate outputs using their alphabetic ID sorting.
 4. **Acquisition Cost**: High-cost evidence will be penalized in Utility scoring, preferring cheaper but slightly less informative evidence.
 5. **Already-Observed Evidence**: The engine filters out candidates that have already been observed.
 
