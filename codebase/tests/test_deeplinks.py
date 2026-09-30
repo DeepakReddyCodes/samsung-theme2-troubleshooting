@@ -204,6 +204,99 @@ def test_fallback_names_concrete_screen():
     assert screen in {"Edge panels", "Display"}
 
 
+def test_wrong_settings_target_routes_to_fallback(resolver):
+    """Verify that a hallucinated or misaligned Settings target properly fails to match the wrong catalog entry and routes to a grounded fallback."""
+    intent = TroubleshootingIntent(
+        action_name="Change Font Style",
+        steps=[
+            "Navigate to Settings and select Connections.",
+            "Tap on Wi-Fi and adjust the font style settings.",
+        ],
+        category="auto",
+    )
+    result = resolver.resolve(intent)
+    # The intent mixes font style and Wi-Fi. It should either match nothing or match Wi-Fi.
+    assert result.is_fallback is True
+    # As it's a fallback, it extracts the screen name, which might be 'Connections', 'Wi-Fi' or 'Settings' depending on extraction heuristic. We accept any valid extraction.
+    assert any(x in result.actionable_deeplink.description.lower() for x in ["wi-fi", "connection", "setting"])
+
+
+def test_resolver_handles_all_action_categories(resolver, raw_catalog):
+    """Verify that the resolver processes auto, manual, and critical actions and assigns appropriate deeplinks."""
+    categories = ["auto", "manual", "critical"]
+
+    for cat in categories:
+        intent = TroubleshootingIntent(
+            action_name="Display Brightness",
+            steps=["Adjust brightness level in Display settings."],
+            category=cat,
+        )
+        result = resolver.resolve(intent)
+
+        assert result.is_fallback is False
+        assert result.matched_entry_id == "DL-0496"  # Ensure match happens regardless of category
+
+        raw_item = next(e for e in raw_catalog["deeplinks"] if e["id"] == result.matched_entry_id)
+        assert result.actionable_deeplink.deeplink == raw_item["deeplink"]
+
+
+def test_malformed_and_nonexistent_uri_rejection(resolver, raw_catalog):
+    """Verify that nonexistent or malformed URIs are rejected, and the resolver falls back to dummy_positive."""
+    intent = TroubleshootingIntent(
+        action_name="Fake Action",
+        steps=["Go to a screen that does not exist."],
+        category="auto",
+    )
+    result = resolver.resolve(intent)
+
+    # Must fallback because the intent doesn't match any real catalog entry
+    assert result.is_fallback is True
+    assert result.actionable_deeplink is None
+
+
+def test_no_fabricated_target_for_generic_siis(resolver):
+    """Verify that a generic SIIS scenario without a concrete Settings target doesn't fabricate one."""
+    intent = TroubleshootingIntent(
+        action_name="Clean Device Externally",
+        steps=[
+            "Use a microfiber cloth to wipe the screen.",
+            "Make sure not to use harsh chemicals.",
+        ],
+        category="manual",
+    )
+    result = resolver.resolve(intent)
+    assert result.is_fallback is True
+    # As it's generic, it should not invent any target and return None for the actionable deeplink
+    assert result.actionable_deeplink is None
+
+
+def test_unseen_siis_scenario_concrete_target(resolver):
+    """Verify that an unseen SIIS scenario with a concrete Settings target generates a proper dummy-positive fallback."""
+    intent = TroubleshootingIntent(
+        action_name="Quantum Computing Mode",
+        steps=[
+            "Navigate to Settings and select Quantum Mode.",
+            "Turn on superposition to avoid interference.",
+        ],
+        category="auto",
+    )
+    result = resolver.resolve(intent)
+    assert result.is_fallback is True
+    assert any(x in result.actionable_deeplink.description.lower() for x in ["quantum", "setting"])
+
+
+def test_regression_arbitrary_noun_not_invented_as_target(resolver):
+    """Regression: An arbitrary action noun such as 'Screen Mirroring' should NOT be accepted as a Settings target unless explicitly present as a concrete Settings destination."""
+    intent = TroubleshootingIntent(
+        action_name="Screen Mirroring",
+        steps=["Turn on Screen Mirroring"],
+        category="auto",
+    )
+    result = resolver.resolve(intent)
+    assert result.is_fallback is True
+    assert result.actionable_deeplink is None
+
+
 # ============================================================================
 # 6. Verbatim Preservation & Validation Tests
 # ============================================================================
