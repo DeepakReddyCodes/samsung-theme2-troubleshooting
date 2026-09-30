@@ -89,12 +89,11 @@ def compute_siis_fingerprint(siis_response: Optional[Union[Dict[str, Any], str]]
         content = str(siis_response.get("content", "")).strip().lower()
         title = re.sub(r"\s+", " ", title)
         content = re.sub(r"\s+", " ", content)
-        key_content = content[:500]  # First 500 chars captures article context
-        payload = f"{title}::{key_content}".encode("utf-8")
+        payload = f"{title}::{content}".encode("utf-8")
         return hashlib.sha256(payload).hexdigest()[:16]
 
     if isinstance(siis_response, str):
-        cleaned = re.sub(r"\s+", " ", siis_response.strip().lower()[:500])
+        cleaned = re.sub(r"\s+", " ", siis_response.strip().lower())
         payload = cleaned.encode("utf-8")
         return hashlib.sha256(payload).hexdigest()[:16]
 

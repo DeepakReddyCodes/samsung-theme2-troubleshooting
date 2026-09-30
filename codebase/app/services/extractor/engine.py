@@ -213,8 +213,7 @@ class ColdPathExtractionEngine:
                 query=query,
                 response=final_response,
                 siis_response=siis_response,
-                scenario_id=scenario_id,
-                validate=False,  # Already validated
+                scenario_id=scenario_id
             )
 
         return final_response
