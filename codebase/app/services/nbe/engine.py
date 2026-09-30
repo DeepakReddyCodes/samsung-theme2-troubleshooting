@@ -48,7 +48,23 @@ class NBEEvaluationEngine:
             )
 
         # 1. Structure data
-        priors = {h.id: h.prior_probability for h in request.hypotheses}
+        priors = {}
+        for h in request.hypotheses:
+            if h.id in priors:
+                raise ValueError(f"Duplicate hypothesis ID: {h.id}")
+            priors[h.id] = h.prior_probability
+
+        seen_evidence = set()
+        for e in request.available_evidence:
+            if e.id in seen_evidence:
+                raise ValueError(f"Duplicate evidence candidate ID: {e.id}")
+            seen_evidence.add(e.id)
+
+        seen_observations = set()
+        for o in request.observations:
+            if o.evidence_id in seen_observations:
+                raise ValueError(f"Duplicate observation ID: {o.evidence_id}")
+            seen_observations.add(o.evidence_id)
 
         # Normalize priors if they don't sum to 1
         total_prior = sum(priors.values())
@@ -62,6 +78,8 @@ class NBEEvaluationEngine:
         for lh in request.likelihoods:
             if lh.evidence_id not in likelihoods:
                 likelihoods[lh.evidence_id] = {}
+            if lh.hypothesis_id in likelihoods[lh.evidence_id]:
+                raise ValueError(f"Duplicate likelihood mapping for Evidence {lh.evidence_id}, Hypothesis {lh.hypothesis_id}")
             likelihoods[lh.evidence_id][lh.hypothesis_id] = lh.probability_true
 
         # 2. Calculate current posteriors given existing observations
@@ -98,16 +116,22 @@ class NBEEvaluationEngine:
             p_e_false = 1.0 - p_e_true
 
             # Expected entropy if candidate is True
-            posteriors_if_true = self.get_posterior_probabilities(
-                current_posteriors, {candidate.id: True}, likelihoods
-            )
-            entropy_if_true = self.calculate_entropy(list(posteriors_if_true.values()))
+            if p_e_true > 0.0:
+                posteriors_if_true = self.get_posterior_probabilities(
+                    current_posteriors, {candidate.id: True}, likelihoods
+                )
+                entropy_if_true = self.calculate_entropy(list(posteriors_if_true.values()))
+            else:
+                entropy_if_true = 0.0
 
             # Expected entropy if candidate is False
-            posteriors_if_false = self.get_posterior_probabilities(
-                current_posteriors, {candidate.id: False}, likelihoods
-            )
-            entropy_if_false = self.calculate_entropy(list(posteriors_if_false.values()))
+            if p_e_false > 0.0:
+                posteriors_if_false = self.get_posterior_probabilities(
+                    current_posteriors, {candidate.id: False}, likelihoods
+                )
+                entropy_if_false = self.calculate_entropy(list(posteriors_if_false.values()))
+            else:
+                entropy_if_false = 0.0
 
             # E_e[H(H | E=e)]
             expected_conditional_entropy = (p_e_true * entropy_if_true) + (p_e_false * entropy_if_false)
@@ -116,8 +140,11 @@ class NBEEvaluationEngine:
             eig = current_entropy - expected_conditional_entropy
 
             # Utility = EIG / Cost
-            cost = max(candidate.cost, 0.001) # Avoid division by zero
-            utility = eig / cost
+            cost = candidate.cost
+            if cost == 0.0:
+                utility = float('inf') if eig > 0.0001 else 0.0
+            else:
+                utility = eig / cost
 
             if utility > max_utility and eig > 0.0001: # Small threshold for meaningful EIG
                 max_utility = utility

@@ -331,3 +331,100 @@ def test_max_utility_tie_breaking(engine):
     assert resp.selected_evidence is not None
     # since max() will keep the first strictly greater utility, tie goes to e1 (first in list)
     assert resp.selected_evidence.evidence_id == "e1"
+
+
+def test_eig_impossible_branch(engine):
+    # If P(E=True|H)=1 for all H, then P(E=False)=0.
+    # Should not throw ValueError ("Zero total posterior probability") for the False branch because it shouldn't evaluate it.
+    req = NBERequest(
+        hypotheses=[
+            Hypothesis(id="h1", description="Problem A", prior_probability=0.5),
+            Hypothesis(id="h2", description="Problem B", prior_probability=0.5)
+        ],
+        available_evidence=[
+            Evidence(id="e1", description="Useless 100% true evidence", cost=1.0)
+        ],
+        observations=[],
+        likelihoods=[
+            EvidenceLikelihood(evidence_id="e1", hypothesis_id="h1", probability_true=1.0),
+            EvidenceLikelihood(evidence_id="e1", hypothesis_id="h2", probability_true=1.0)
+        ],
+        sufficiency_threshold=0.9
+    )
+
+    # EIG should be 0, not crashing
+    resp = engine.evaluate(req)
+    assert resp.selected_evidence is None
+
+def test_engine_duplicate_ids(engine):
+    # Test duplicate hypothesis
+    with pytest.raises(ValueError, match="Duplicate hypothesis ID"):
+        engine.evaluate(NBERequest(
+            hypotheses=[
+                Hypothesis(id="h1", description="Desc", prior_probability=0.5),
+                Hypothesis(id="h1", description="Desc2", prior_probability=0.5)
+            ],
+            available_evidence=[],
+            likelihoods=[]
+        ))
+
+    # Test duplicate candidate evidence
+    with pytest.raises(ValueError, match="Duplicate evidence candidate ID"):
+        engine.evaluate(NBERequest(
+            hypotheses=[Hypothesis(id="h1", description="Desc", prior_probability=1.0)],
+            available_evidence=[
+                Evidence(id="e1", description="Desc", cost=1.0),
+                Evidence(id="e1", description="Desc2", cost=2.0)
+            ],
+            likelihoods=[]
+        ))
+
+    # Test duplicate observations
+    with pytest.raises(ValueError, match="Duplicate observation ID"):
+        engine.evaluate(NBERequest(
+            hypotheses=[Hypothesis(id="h1", description="Desc", prior_probability=1.0)],
+            available_evidence=[],
+            observations=[
+                EvidenceObservation(evidence_id="e1", is_true=True),
+                EvidenceObservation(evidence_id="e1", is_true=False)
+            ],
+            likelihoods=[]
+        ))
+
+    # Test duplicate likelihoods
+    with pytest.raises(ValueError, match="Duplicate likelihood mapping"):
+        engine.evaluate(NBERequest(
+            hypotheses=[Hypothesis(id="h1", description="Desc", prior_probability=1.0)],
+            available_evidence=[],
+            likelihoods=[
+                EvidenceLikelihood(evidence_id="e1", hypothesis_id="h1", probability_true=0.8),
+                EvidenceLikelihood(evidence_id="e1", hypothesis_id="h1", probability_true=0.5)
+            ]
+        ))
+
+def test_eig_infinite_utility(engine):
+    req = NBERequest(
+        hypotheses=[
+            Hypothesis(id="h1", description="Problem A", prior_probability=0.5),
+            Hypothesis(id="h2", description="Problem B", prior_probability=0.5)
+        ],
+        available_evidence=[
+            Evidence(id="e1", description="Perfect, free evidence", cost=0.0),
+            Evidence(id="e2", description="Perfect, free evidence 2", cost=0.0)
+        ],
+        observations=[],
+        likelihoods=[
+            EvidenceLikelihood(evidence_id="e1", hypothesis_id="h1", probability_true=1.0),
+            EvidenceLikelihood(evidence_id="e1", hypothesis_id="h2", probability_true=0.0),
+            EvidenceLikelihood(evidence_id="e2", hypothesis_id="h1", probability_true=1.0),
+            EvidenceLikelihood(evidence_id="e2", hypothesis_id="h2", probability_true=0.0)
+        ],
+        sufficiency_threshold=0.9
+    )
+
+    # Both e1 and e2 have EIG=1.0, cost=0.0 -> utility = infinity.
+    # Deterministic tie-breaking should pick e1.
+    resp = engine.evaluate(req)
+    assert resp.selected_evidence is not None
+    assert resp.selected_evidence.utility_score == float('inf')
+    assert resp.selected_evidence.evidence_id == "e1"
