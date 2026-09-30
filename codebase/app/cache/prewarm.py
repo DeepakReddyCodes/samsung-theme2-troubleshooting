@@ -284,17 +284,16 @@ def build_canonical_plan(
     title_str = rewrite_title(title)
     desc_str = rewrite_action_description(desc, action_name)
 
-    # Resolve Deeplinks if Auto
+    # Resolve Deeplinks for all categories
     actionable_dl = None
     val_dl = None
-    if category == actionCategory.auto:
-        resolution = resolver.resolve_from_step_group(
-            action_name=action_name,
-            steps=steps,
-            category="auto",
-        )
-        actionable_dl = resolution.actionable_deeplink
-        val_dl = resolution.validation_deeplink
+    resolution = resolver.resolve_from_step_group(
+        action_name=action_name,
+        steps=steps,
+        category=category.value,
+    )
+    actionable_dl = resolution.actionable_deeplink
+    val_dl = resolution.validation_deeplink
 
     step_group = StepGroup(
         steps=steps,

@@ -59,6 +59,16 @@ def create_grounded_dummy_positive(
     screen_name: Optional[str] = None,
 ) -> Optional[DeeplinkResolutionResult]:
     """Build a grounded bixby://dummy_positive resolution strictly derived from the intent context."""
+    # Ensure an explicit screen_name is authoritative
+    if screen_name:
+        is_known = False
+        for known in KNOWN_SETTINGS_SCREENS:
+            if known.lower() in screen_name.lower():
+                is_known = True
+                break
+        if not is_known:
+            screen_name = None
+
     screen = screen_name or extract_concrete_screen_name(intent)
 
     if not screen:

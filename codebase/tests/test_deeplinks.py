@@ -284,20 +284,26 @@ def test_no_fabricated_target_for_generic_siis(resolver):
 
 
 def test_unseen_siis_scenario_concrete_target(resolver):
-    """Verify that an unseen SIIS scenario with a concrete Settings target generates a proper dummy-positive fallback."""
-    intent = TroubleshootingIntent(
-        action_name="Quantum Computing Mode",
-        steps=[
-            "Navigate to Settings and select Quantum Computing Mode.",
-            "Turn on superposition to avoid interference.",
-        ],
-        category="auto",
-    )
-    # Provide the concrete name as explicit fallback hint to simulate grounded extraction finding a concrete name
+    """Verify that an unseen SIIS scenario with an explicit authoritative target receives dummy_positive, while arbitrary explicit nouns do not."""
     from app.services.fallback_resolver import create_grounded_dummy_positive
-    result = create_grounded_dummy_positive(intent, screen_name="Quantum Computing Mode")
-    assert result.is_fallback is True
-    assert any(x in result.actionable_deeplink.description.lower() for x in ["quantum", "setting"])
+
+    # 1. Arbitrary noun should NOT generate dummy_positive even if passed explicitly
+    intent_invalid = TroubleshootingIntent(
+        action_name="Quantum Computing Mode",
+        steps=["Navigate to Settings and select Quantum Computing Mode."],
+    )
+    result_invalid = create_grounded_dummy_positive(intent_invalid, screen_name="Quantum Computing Mode")
+    assert result_invalid is None
+
+    # 2. Authoritative Settings screen (e.g. Display) SHOULD generate dummy_positive
+    intent_valid = TroubleshootingIntent(
+        action_name="Screen Timeout",
+        steps=["Navigate to Settings and select Display."],
+    )
+    result_valid = create_grounded_dummy_positive(intent_valid, screen_name="Display")
+    assert result_valid is not None
+    assert result_valid.is_fallback is True
+    assert any(x in result_valid.actionable_deeplink.description.lower() for x in ["display", "setting"])
 
 
 def test_regression_arbitrary_noun_not_invented_as_target(resolver):
