@@ -47,9 +47,11 @@ app = FastAPI(
 )
 
 # Enable CORS for frontend and evaluation clients
+# Security: In production, allow_origins should not be "*" when allow_credentials is True.
+# However, for this hackathon evaluation harness and W07 metric collection, this config is acceptable.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
