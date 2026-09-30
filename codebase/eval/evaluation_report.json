@@ -1,0 +1,67 @@
+{
+  "metadata": {
+    "total_evaluated": 37,
+    "total_eval_errors": 0,
+    "timestamp": 1790769772.782581
+  },
+  "dataset_sizes": {
+    "canonical": 20,
+    "paraphrased": 4,
+    "unseen": 4,
+    "adversarial": 4,
+    "polarity": 5
+  },
+  "grounding": {
+    "measured_unseen_grounded_actions": 4,
+    "unseen_actionable_total": 4
+  },
+  "empty_response_semantics": {
+    "correctly_empty": 0,
+    "incorrectly_empty": 0
+  },
+  "action_validity": {
+    "canonical_valid_actions": 20,
+    "paraphrase_valid_actions": 4
+  },
+  "deeplink_resolution": {
+    "catalog_matches": 10,
+    "validation_matches": 8,
+    "verified_dummy_positives": 0,
+    "unable_to_verify_provenance": 0,
+    "invalid_attempts": 0,
+    "total_returned_step_groups": 22,
+    "actionable_deeplink_present_count": 10,
+    "actionable_deeplink_coverage_pct": 45.45454545454545,
+    "missing_actionable_deeplink_count": 12
+  },
+  "adversarial_safety": {
+    "safely_rejected_422_or_empty": 0,
+    "safely_ignored_malicious_content": 0,
+    "unsafe_propagation": 4
+  },
+  "polarity": {
+    "semantic_correctness_count": 2,
+    "total_polarity_cases": 5
+  },
+  "latency_ms": {
+    "canonical": {
+      "p50": 3.386321500329359,
+      "p95": 10.412271450331922,
+      "p99": 34.238156689971184
+    },
+    "paraphrase": {
+      "p50": 146.47643250009423,
+      "p95": 536.6827730505064,
+      "p99": 571.9347618105712
+    },
+    "unseen": {
+      "p50": 2.8389520002747304,
+      "p95": 3.8573619506678365,
+      "p99": 3.997724390737858
+    }
+  },
+  "cache": {
+    "canonical_hit_rate": 100.0,
+    "semantic_hit_rate": 50.0
+  }
+}
