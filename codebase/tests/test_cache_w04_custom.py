@@ -39,11 +39,6 @@ def test_siis_fingerprint_dict():
     assert fp1 != fp2, "Fingerprint should hash the FULL SIIS content for dicts"
 
 def test_cache_poisoning(cache):
-    # Try inserting an invalid response directly to exact_store to bypass `put` validate
-    pass # Wait we only care about `put` validate, which is tested in existing tests. We can check if invalid response can bypass validate via other means?
-
-
-def test_cache_poisoning(cache):
     # Try inserting an invalid response
     from app.core.schema import ContextDeeplinkResponse, Goal, Action, actionCategory
 
