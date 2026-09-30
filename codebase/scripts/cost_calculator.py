@@ -10,18 +10,20 @@ def calculate_cost(input_tokens_per_req, output_tokens_per_req, requests_per_mon
     - Infrastructure, database, and operational costs are NOT included.
     - Pricing is configurable and strictly illustrative.
     """
-    if input_tokens_per_req < 0:
-        raise ValueError("Input tokens per request must be >= 0")
-    if output_tokens_per_req < 0:
-        raise ValueError("Output tokens per request must be >= 0")
-    if requests_per_month < 0:
-        raise ValueError("Requests per month must be >= 0")
-    if price_per_1m_input < 0:
-        raise ValueError("Price per 1M input tokens must be >= 0")
-    if price_per_1m_output < 0:
-        raise ValueError("Price per 1M output tokens must be >= 0")
-    if not (0.0 <= cache_hit_rate <= 1.0):
-        raise ValueError("Cache hit rate must be between 0.0 and 1.0 inclusive")
+    import math
+
+    if not math.isfinite(input_tokens_per_req) or input_tokens_per_req < 0:
+        raise ValueError("Input tokens per request must be >= 0 and finite")
+    if not math.isfinite(output_tokens_per_req) or output_tokens_per_req < 0:
+        raise ValueError("Output tokens per request must be >= 0 and finite")
+    if not math.isfinite(requests_per_month) or requests_per_month < 0:
+        raise ValueError("Requests per month must be >= 0 and finite")
+    if not math.isfinite(price_per_1m_input) or price_per_1m_input < 0:
+        raise ValueError("Price per 1M input tokens must be >= 0 and finite")
+    if not math.isfinite(price_per_1m_output) or price_per_1m_output < 0:
+        raise ValueError("Price per 1M output tokens must be >= 0 and finite")
+    if not math.isfinite(cache_hit_rate) or not (0.0 <= cache_hit_rate <= 1.0):
+        raise ValueError("Cache hit rate must be between 0.0 and 1.0 inclusive and finite")
 
     # Uncached scenario
     uncached_input_cost = (input_tokens_per_req / 1_000_000.0) * price_per_1m_input

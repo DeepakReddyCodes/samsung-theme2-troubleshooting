@@ -41,25 +41,34 @@ def test_cost_calculator_zero_tokens():
     assert res["monthly_cost_with_cache"] == 0.0
 
 def test_cost_calculator_invalid_negative_tokens():
-    with pytest.raises(ValueError, match="Input tokens per request must be >= 0"):
+    with pytest.raises(ValueError, match="Input tokens per request must be >= 0 and finite"):
         calculate_cost(-10, 300, 100000, 0.15, 0.60, 0.5)
-    with pytest.raises(ValueError, match="Output tokens per request must be >= 0"):
+    with pytest.raises(ValueError, match="Output tokens per request must be >= 0 and finite"):
         calculate_cost(1000, -5, 100000, 0.15, 0.60, 0.5)
 
 def test_cost_calculator_invalid_negative_requests():
-    with pytest.raises(ValueError, match="Requests per month must be >= 0"):
+    with pytest.raises(ValueError, match="Requests per month must be >= 0 and finite"):
         calculate_cost(1000, 300, -100, 0.15, 0.60, 0.5)
 
 def test_cost_calculator_invalid_negative_prices():
-    with pytest.raises(ValueError, match="Price per 1M input tokens must be >= 0"):
+    with pytest.raises(ValueError, match="Price per 1M input tokens must be >= 0 and finite"):
         calculate_cost(1000, 300, 100000, -0.1, 0.60, 0.5)
-    with pytest.raises(ValueError, match="Price per 1M output tokens must be >= 0"):
+    with pytest.raises(ValueError, match="Price per 1M output tokens must be >= 0 and finite"):
         calculate_cost(1000, 300, 100000, 0.15, -0.2, 0.5)
 
 def test_cost_calculator_cache_hit_rate_below_zero():
-    with pytest.raises(ValueError, match="Cache hit rate must be between 0.0 and 1.0 inclusive"):
+    with pytest.raises(ValueError, match="Cache hit rate must be between 0.0 and 1.0 inclusive and finite"):
         calculate_cost(1000, 300, 100000, 0.15, 0.60, -0.1)
 
 def test_cost_calculator_cache_hit_rate_above_one():
-    with pytest.raises(ValueError, match="Cache hit rate must be between 0.0 and 1.0 inclusive"):
+    with pytest.raises(ValueError, match="Cache hit rate must be between 0.0 and 1.0 inclusive and finite"):
         calculate_cost(1000, 300, 100000, 0.15, 0.60, 1.1)
+
+def test_cost_calculator_non_finite_inputs():
+    import math
+    with pytest.raises(ValueError, match="Input tokens per request must be >= 0 and finite"):
+        calculate_cost(math.inf, 300, 100000, 0.15, 0.60, 0.5)
+    with pytest.raises(ValueError, match="Requests per month must be >= 0 and finite"):
+        calculate_cost(1000, 300, math.nan, 0.15, 0.60, 0.5)
+    with pytest.raises(ValueError, match="Cache hit rate must be between 0.0 and 1.0 inclusive and finite"):
+        calculate_cost(1000, 300, 100000, 0.15, 0.60, math.inf)
