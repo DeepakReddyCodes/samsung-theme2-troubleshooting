@@ -43,7 +43,12 @@ UI_STOPWORDS = {
 
 # Negative polarity terms favoring offURL / Disable actions
 NEGATIVE_POLARITY_TERMS = {
-    "disable", "turn off", "switch off", "deactivate", "stop", "remove", "hide", "mute",
+    "disable", "turn off", "switch off", "deactivate", "stop", "remove", "hide", "mute", "decrease", "close",
+}
+
+# Positive polarity terms favoring onURL / Enable actions
+POSITIVE_POLARITY_TERMS = {
+    "enable", "turn on", "switch on", "activate", "start", "show", "unmute", "increase", "open",
 }
 
 DEFAULT_CONFIDENCE_THRESHOLD = 0.35
@@ -164,6 +169,7 @@ class LexicalDeeplinkMatcher(IDeeplinkMatcher):
         intent_phrases: Set[str],
         intent_raw: str,
         is_negative_intent: bool,
+        is_positive_intent: bool = False,
     ) -> Tuple[float, List[str]]:
         """Compute structured relevance score for a catalog entry."""
         matched_fields = []
@@ -212,18 +218,25 @@ class LexicalDeeplinkMatcher(IDeeplinkMatcher):
         orig_type = entry.get("originalType") or ""
         msg_lower = entry["message"].lower()
 
+        is_entry_negative = orig_type == "offURL" or any(term in msg_lower for term in NEGATIVE_POLARITY_TERMS)
+        is_entry_positive = orig_type == "onURL" or any(term in msg_lower for term in POSITIVE_POLARITY_TERMS)
+
         if is_negative_intent:
-            if orig_type == "offURL" or msg_lower.startswith("disable"):
-                polarity_bonus += 0.15
+            if is_entry_negative:
+                polarity_bonus += 0.20
                 matched_fields.append("polarity_negative_match")
-            elif orig_type == "onURL" or msg_lower.startswith("enable"):
-                polarity_bonus -= 0.20
-        else:
-            if orig_type in {"onURL", "onClickURL"} or msg_lower.startswith("enable") or msg_lower.startswith("view"):
-                polarity_bonus += 0.10
+            elif is_entry_positive:
+                polarity_bonus -= 0.30
+        elif is_positive_intent:
+            if is_entry_positive:
+                polarity_bonus += 0.20
                 matched_fields.append("polarity_positive_match")
-            elif orig_type == "offURL" or msg_lower.startswith("disable"):
-                polarity_bonus -= 0.15
+            elif is_entry_negative:
+                polarity_bonus -= 0.30
+        else:
+            if orig_type == "onClickURL" or msg_lower.startswith("view") or msg_lower.startswith("open"):
+                polarity_bonus += 0.10
+                matched_fields.append("polarity_neutral_match")
 
         confidence = max(0.0, min(1.0, (f1 * 0.6) + phrase_boost + polarity_bonus))
         return confidence, matched_fields
@@ -235,11 +248,11 @@ class LexicalDeeplinkMatcher(IDeeplinkMatcher):
         intent_phrases = extract_phrases(intent_raw, 2)
 
         # Check polarity
-        is_negative = any(term in intent_raw.lower() for term in NEGATIVE_POLARITY_TERMS)
+        intent_lower = intent_raw.lower()
+        is_negative = any(term in intent_lower for term in NEGATIVE_POLARITY_TERMS)
+        is_positive = any(term in intent_lower for term in POSITIVE_POLARITY_TERMS)
 
-        best_entry = None
-        best_confidence = 0.0
-        best_fields: List[str] = []
+        candidates = []
 
         for entry in self.entries:
             confidence, fields = self._calculate_relevance(
@@ -248,11 +261,36 @@ class LexicalDeeplinkMatcher(IDeeplinkMatcher):
                 intent_phrases=intent_phrases,
                 intent_raw=intent_raw,
                 is_negative_intent=is_negative,
+                is_positive_intent=is_positive,
             )
-            if confidence > best_confidence:
-                best_confidence = confidence
-                best_entry = entry
-                best_fields = fields
+            if confidence > 0:
+                candidates.append((confidence, entry, fields))
+
+        candidates.sort(key=lambda x: x[0], reverse=True)
+
+        best_entry = None
+        best_confidence = 0.0
+        best_fields: List[str] = []
+
+        MARGIN_THRESHOLD = 0.05
+
+        if candidates:
+            top_conf, top_entry, top_fields = candidates[0]
+
+            # Check for ambiguity with runner-up
+            if len(candidates) > 1:
+                runner_up_conf = candidates[1][0]
+                if top_conf >= self.confidence_threshold and (top_conf - runner_up_conf) >= MARGIN_THRESHOLD:
+                    best_entry = top_entry
+                    best_confidence = top_conf
+                    best_fields = top_fields
+                else:
+                    # Ambiguous
+                    best_confidence = top_conf
+            elif top_conf >= self.confidence_threshold:
+                best_entry = top_entry
+                best_confidence = top_conf
+                best_fields = top_fields
 
         # If confidence passes threshold, select catalog entry verbatim
         if best_entry and best_confidence >= self.confidence_threshold:
@@ -302,4 +340,18 @@ class LexicalDeeplinkMatcher(IDeeplinkMatcher):
 
         # Fallback if below confidence threshold
         logger.debug(f"Confidence {best_confidence:.3f} below threshold {self.confidence_threshold}. Triggering fallback.")
-        return create_grounded_dummy_positive(intent)
+        fallback = create_grounded_dummy_positive(intent)
+
+        if fallback:
+            return fallback
+
+        # If no concrete target can be found, return a safe null resolution instead of hallucinating.
+        return DeeplinkResolutionResult(
+            actionable_deeplink=None,
+            validation_deeplink=None,
+            matched_entry_id="NONE",
+            matched_fields=[],
+            confidence_score=0.0,
+            is_fallback=True,
+            debug_explanation="No catalog match and no concrete settings target found for fallback."
+        )

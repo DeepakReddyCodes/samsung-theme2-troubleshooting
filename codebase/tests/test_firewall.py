@@ -245,7 +245,7 @@ def test_negative_firewall_auto_action_missing_deeplink(firewall):
                 stepGroups=[
                     StepGroup(
                         steps=["Navigate to Settings."],
-                        actionableDeeplink=None,  # Missing for auto!
+                        actionableDeeplink=None,  # Missing!
                     )
                 ],
             )

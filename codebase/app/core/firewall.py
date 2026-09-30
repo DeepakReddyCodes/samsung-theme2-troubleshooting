@@ -147,12 +147,11 @@ class ValidationFirewall:
                         errors.append(f"URL leak in step text: {[m[1] for m in step_leaks]}")
                 cleaned_steps.append(step)
 
-            # Auto action deeplink requirement
-            if action.category == actionCategory.auto:
-                if not group.actionableDeeplink:
-                    errors.append(
-                        f"Action '{action.actionName}' is category 'auto' but StepGroup {g_idx} has no actionableDeeplink"
-                    )
+            # Enforce actionableDeeplink on all categories
+            if not group.actionableDeeplink:
+                errors.append(
+                    f"Action '{action.actionName}' is category '{action.category}' but StepGroup {g_idx} has no actionableDeeplink"
+                )
 
             # Catalog Integrity for actionableDeeplink
             if group.actionableDeeplink:
