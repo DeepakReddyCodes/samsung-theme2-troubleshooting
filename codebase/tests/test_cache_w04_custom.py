@@ -60,7 +60,7 @@ def test_cache_poisoning(cache):
     )
 
     # Attempt to cache the invalid response
-    stored = cache.put("Query for bad plan", invalid_response, _internal_validate_override=True)
+    stored = cache.put("Query for bad plan", invalid_response, _internal_prevalidated=False)
 
     # Should be rejected by validation firewall
     assert stored is False, "Invalid responses should not be cached"
@@ -84,7 +84,7 @@ def test_cache_return_validation(cache):
     )
 
     # Put a valid response
-    cache.put("my validate query", valid, _internal_validate_override=False)
+    cache.put("my validate query", valid, _internal_prevalidated=True)
 
     # Mutate the exact store to make it invalid (simulating schema/catalog change over time)
     # The title should be 2-3 words. We will make it 8 words. Since allow_repair=False is now used on retrieval, this should fail.
@@ -95,7 +95,7 @@ def test_cache_return_validation(cache):
     assert meta["hit_type"] == "invalid_cached"
 
 def test_cache_engine_version_miss(cache, valid_response):
-    cache.put("query version", valid_response, _internal_validate_override=False)
+    cache.put("query version", valid_response, _internal_prevalidated=True)
 
     # Manually modify the version token requirement
     cache.version_manager.engine_version = "2.0.0"
@@ -106,7 +106,7 @@ def test_cache_engine_version_miss(cache, valid_response):
     assert meta["cache_hit"] is False
 
 def test_cache_catalog_version_miss(cache, valid_response):
-    cache.put("query catalog", valid_response, _internal_validate_override=False)
+    cache.put("query catalog", valid_response, _internal_prevalidated=True)
 
     # Manually modify catalog hash
     cache.version_manager.catalog_hash = "newhash123"
@@ -145,23 +145,43 @@ def test_real_dependency_invalidation(valid_response, tmp_path):
     # Init cache
     c = FastPathSemanticCache(catalog_path=cat_path, enable_embeddings=False)
 
-    c.put("test query", valid_response, _internal_validate_override=False)
+    c.put("test query", valid_response, _internal_prevalidated=True)
     resp, meta = c.get("test query")
     assert meta["cache_hit"] is True
 
     # Sleep briefly to ensure mtime changes if relying on that, though we rely on hash
     # Actually just modifying contents changes hash
+
+    hash1 = c.version_manager.catalog_hash
     cat_path.write_text('{"deeplinks": []}')
+    import time; time.sleep(0.1)
+
+    # Let's verify compute_file_hash changed
+    from app.cache.semantic_cache import compute_file_hash
+    hash2 = compute_file_hash(cat_path)
+    assert hash1 != hash2, f"File hash did not change! {hash1} vs {hash2}"
 
     resp2, meta2 = c.get("test query")
-    assert meta2["cache_hit"] is False, "Should miss because catalog hash changed"
+    assert meta2["cache_hit"] is False, f"Should miss because catalog hash changed. Catalog hash: {c.version_manager.catalog_hash}"
+
     assert len(c.exact_store) == 0, "Cache should have been invalidated"
+
+    # Verify version state refreshed
+    new_token = c.version_manager.version_token
+
+    # Cache the item again under the NEW dependency version
+    c.put("test query", valid_response, _internal_prevalidated=True)
+
+    # Second lookup should HIT and NOT invalidate again because the hash is stable
+    resp3, meta3 = c.get("test query")
+    assert meta3["cache_hit"] is True, "Second lookup should hit and not repeatedly invalidate"
+    assert c.version_manager.version_token == new_token, "Token should remain stable"
 
 
 def test_semantic_invalidation_consistency(valid_response):
     from app.cache.semantic_cache import FastPathSemanticCache
     c = FastPathSemanticCache(enable_embeddings=True)
-    c.put("semantic query", valid_response, _internal_validate_override=False)
+    c.put("semantic query", valid_response, _internal_prevalidated=True)
 
     assert len(c.entries_list) == 1
     assert c.vector_matrix is not None

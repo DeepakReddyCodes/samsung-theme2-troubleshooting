@@ -389,7 +389,7 @@ def prewarm_canonical_scenarios(
             response=plan,
             siis_response=siis_resp,
             scenario_id=sc_id,
-            _internal_validate_override=False,  # Already validated
+            _internal_prevalidated=True,  # Already validated
             intent_vector=intent_vec,
             rebuild_matrix=False,
         )
@@ -400,7 +400,7 @@ def prewarm_canonical_scenarios(
             response=plan,
             siis_response=None,
             scenario_id=sc_id,
-            _internal_validate_override=False,
+            _internal_prevalidated=True,
             intent_vector=intent_vec,
             rebuild_matrix=False,
         )

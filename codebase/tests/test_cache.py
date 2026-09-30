@@ -275,7 +275,7 @@ def test_cache_stores_only_validated_responses(cache):
             )
         ]
     )
-    stored = cache.put("Query for bad plan", bad_resp, _internal_validate_override=True)
+    stored = cache.put("Query for bad plan", bad_resp, _internal_prevalidated=False)
     assert stored is False
     assert len(cache.exact_store) == 0
 

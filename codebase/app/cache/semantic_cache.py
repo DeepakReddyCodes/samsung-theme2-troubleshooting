@@ -300,13 +300,13 @@ class FastPathSemanticCache:
         """
         t0 = time.perf_counter()
 
-        with self._lock:
-            self.total_lookups += 1
-
         # Live dependency invalidation
         if not self.version_manager.check_version():
             self.invalidate(reason="dependency_change")
-            self.version_manager._version_token = self.version_manager._generate_token()
+            self.version_manager.refresh()
+
+        with self._lock:
+            self.total_lookups += 1
 
         norm_query = normalize_query(query)
         fingerprint = compute_siis_fingerprint(siis_response)
@@ -419,19 +419,19 @@ class FastPathSemanticCache:
         response: ContextDeeplinkResponse,
         siis_response: Optional[Union[Dict[str, Any], str]] = None,
         scenario_id: Optional[str] = None,
-        _internal_validate_override: bool = True,
         intent_vector: Optional[np.ndarray] = None,
         rebuild_matrix: bool = True,
+        _internal_prevalidated: bool = False,
     ) -> bool:
         """Store a validated ContextDeeplinkResponse in the cache."""
 
         # Live dependency invalidation before put
         if not self.version_manager.check_version():
-            self.version_manager.refresh()
             self.invalidate(reason="dependency_change_on_put")
+            self.version_manager.refresh()
 
         # Enforce strict validation firewall before storing. No public bypass.
-        if _internal_validate_override:
+        if not _internal_prevalidated:
             validated_resp, errors = self.firewall.validate_response(response, allow_repair=False)
             if errors:
                 logger.error(f"Cannot cache invalid response: {errors}")
@@ -439,11 +439,6 @@ class FastPathSemanticCache:
             final_response = validated_resp
         else:
             final_response = response
-
-        # Live dependency invalidation
-        if not self.version_manager.check_version():
-            self.invalidate(reason="dependency_change")
-            self.version_manager._version_token = self.version_manager._generate_token()
 
         norm_query = normalize_query(query)
         fingerprint = compute_siis_fingerprint(siis_response)
@@ -464,20 +459,22 @@ class FastPathSemanticCache:
             scenario_id=scenario_id,
         )
 
-        self.exact_store[exact_key] = entry
-        self.entries_list.append(entry)
+        with self._lock:
+            self.exact_store[exact_key] = entry
+            self.entries_list.append(entry)
 
-        if rebuild_matrix and intent_vec is not None:
-            self._rebuild_vector_matrix()
+            if rebuild_matrix and intent_vec is not None:
+                self._rebuild_vector_matrix()
 
         return True
 
     def invalidate(self, reason: str = "manual") -> None:
         """Invalidate all cached entries."""
         logger.info(f"Invalidating fast-path cache. Reason: {reason}")
-        self.exact_store.clear()
-        self.entries_list.clear()
-        self.vector_matrix = None
+        with self._lock:
+            self.exact_store.clear()
+            self.entries_list.clear()
+            self.vector_matrix = None
 
     def get_stats(self) -> Dict[str, Any]:
         """Compute performance percentiles and cache statistics."""
