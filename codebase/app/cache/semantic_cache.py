@@ -20,7 +20,7 @@ import logging
 from pathlib import Path
 import re
 import time
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
@@ -244,7 +244,7 @@ class FastPathSemanticCache:
 
     def _has_intent_conflict(self, query_norm: str, cached_norm: str) -> bool:
         """Safety check to ensure query does not have opposing action intent to cached plan."""
-        def _extract_intents(text: str) -> Set[str]:
+        def _extract_intents(text: str) -> set:
             intents = set()
             tokens = set(text.split())
             if "restore" in tokens or "recovering" in tokens:

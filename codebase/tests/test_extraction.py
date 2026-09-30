@@ -509,3 +509,43 @@ def test_empty_siis_behavior(engine):
     plan_str = engine.extract_and_build(query=query, siis_response="")
     assert isinstance(plan_str, ContextDeeplinkResponse)
     assert len(plan_str.contexts) == 0
+
+
+def test_grounding_contextual_contradiction(engine):
+    """Verify unrelated polarity statements do not cause false rejection."""
+    query = "Bluetooth won't connect."
+    siis_payload = {
+        "title": "Connections",
+        "content": "Turn off Wi-Fi when not needed. Turn on Bluetooth.",
+    }
+    class UnrelatedPolarityProvider(ILLMProvider):
+        def extract(self, query: str, siis_title: str, siis_content: str) -> IntermediateIntent:
+            return IntermediateIntent(
+                topic="Bluetooth",
+                goal_mode="Troubleshooting",
+                title="Bluetooth",
+                actions=[
+                    ExtractedAction(
+                        action_name="Toggle Bluetooth",
+                        description="It will toggle Bluetooth",
+                        category="manual",
+                        steps=["Turn on Bluetooth."],
+                        screen_hint="Bluetooth",
+                        evidence="Turn on Bluetooth",
+                    )
+                ],
+            )
+
+    unrelated_engine = ColdPathExtractionEngine(
+        provider=UnrelatedPolarityProvider(),
+        resolver=engine.resolver,
+        firewall=engine.firewall,
+        grounding_checker=engine.grounding_checker
+    )
+
+    plan = unrelated_engine.extract_and_build(query=query, siis_response=siis_payload)
+
+    # Assert that the step survived grounding, resulting in 1 action
+    assert len(plan.contexts) == 1
+    assert len(plan.contexts[0].actions) == 1
+    assert plan.contexts[0].actions[0].stepGroups[0].steps[0] == "Turn on Bluetooth."
