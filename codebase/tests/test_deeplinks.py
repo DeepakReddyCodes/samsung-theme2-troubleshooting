@@ -129,6 +129,19 @@ def test_metadata_matching_on_validation_key(resolver):
 # 4. Polarity Filtering Tests (Enable vs Disable)
 # ============================================================================
 
+def test_positive_regression_turn_on_wifi_maps_to_enable_wifi(resolver):
+    """Verify that 'Turn on Wi-Fi' accurately matches 'Enable WiFi' (onURL) instead of 'View WiFi Settings'."""
+    intent = TroubleshootingIntent(
+        action_name="Turn on Wi-Fi",
+        steps=["Navigate to connections and turn on Wi-Fi."],
+        category="auto",
+    )
+    result = resolver.resolve(intent)
+    assert result.is_fallback is False
+    assert result.actionable_deeplink.originalType == "onURL"
+    assert "enable wifi" in result.actionable_deeplink.message.lower()
+
+
 def test_polarity_matching_enable_vs_disable(resolver):
     """Verify positive intent picks onURL and negative intent picks offURL."""
     # Positive: Enable Auto-Sync
@@ -170,17 +183,10 @@ def test_low_confidence_routes_to_grounded_dummy_positive(resolver):
     )
     result = resolver.resolve(intent)
 
-    # Must be fallback
+    # Must be fallback but no dummy_positive created because it is generic
     assert result.is_fallback is True
-    assert result.matched_entry_id == "DL-DUMMY"
-    assert result.actionable_deeplink.deeplink == "bixby://dummy_positive"
-    assert result.validation_deeplink is None
-
-    # Description must be 5-7 words and start with 'It will'
-    desc = result.actionable_deeplink.description
-    assert desc.startswith("It will ")
-    words = desc.split()
-    assert 5 <= len(words) <= 7
+    assert result.matched_entry_id == "NONE"
+    assert result.actionable_deeplink is None
 
 
 def test_fallback_names_concrete_screen():
@@ -219,9 +225,10 @@ def test_catalog_uri_never_modified(resolver, raw_catalog):
 
 def test_validation_object_complete_preservation(resolver, raw_catalog):
     """Verify that validation fields (key, resultType, condition, value) are preserved faithfully."""
+    # We want to match DL-0542 which is the "Enable" backup data. So we should phrase it positively
     intent = TroubleshootingIntent(
-        action_name="Back Up Phone Data",
-        steps=["Tap on Accounts and backup. Select Back up data."],
+        action_name="Enable Back Up Phone Data",
+        steps=["Tap on Accounts and backup. Select Back up data and enable it."],
         category="auto",
     )
     result = resolver.resolve(intent)

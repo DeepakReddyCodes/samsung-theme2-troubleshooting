@@ -230,7 +230,7 @@ def test_grounding_verification_audit_trail():
 # ============================================================================
 
 def test_auto_action_deeplink_enforcement(engine):
-    """Verify auto actions always receive non-null actionableDeeplinks."""
+    """Verify auto actions with concrete targets receive non-null actionableDeeplinks."""
     query = "Backup phone files."
     siis_payload = {
         "title": "Backing up personal data",
@@ -241,6 +241,18 @@ def test_auto_action_deeplink_enforcement(engine):
         if action.category == actionCategory.auto:
             assert action.stepGroups[0].actionableDeeplink is not None
             assert action.stepGroups[0].actionableDeeplink.deeplink.startswith("bixby://")
+
+def test_auto_action_without_concrete_target_receives_none_deeplink(engine):
+    """Verify auto actions without concrete targets do not hallucinate deeplinks and keep actionableDeeplink None."""
+    query = "What is screen mirroring?"
+    siis_payload = {
+        "title": "Screen Mirroring explained",
+        "content": "Screen mirroring lets you mirror your phone's screen to a bigger screen, like a Smart TV. Navigate to and open device Settings.",
+    }
+    plan = engine.extract_and_build(query=query, siis_response=siis_payload)
+    for action in plan.contexts[0].actions:
+        if action.category == actionCategory.auto:
+            assert action.stepGroups[0].actionableDeeplink is None
 
 
 def test_validation_object_preservation_in_extracted_plan(engine):
