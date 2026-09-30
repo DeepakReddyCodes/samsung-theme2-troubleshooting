@@ -1,6 +1,6 @@
 # W02 Grounded Extraction Final Report
 
-**Commit SHA:** 8028238128ba7f09f0df1e15b3c3b0eb6ff9d936
+**Commit SHA:** 2b32f347a6bf136a497c7ff79f8e277aa234c1c2
 **Base SHA:** c62505771b6063a5d363151ea51cfc0cfe43e876
 *(Note: The base commit on origin/main is `bf10432406fc7d28db210c9ea43061f61b867640` but we are validating against the requested target context).*
 
@@ -28,7 +28,7 @@
 * **W06 Evaluation:** Evidential/Generalization test framework implementations were untouched.
 
 **Tests Run & Results:**
-* Total 96 Backend + Compliance Tests passed seamlessly.
+* Total 97 Backend + Compliance Tests passed seamlessly.
 * Specifically executed tests directly validating explicitly requested behaviors:
   * empty SIIS behavior: pass
   * unsupported invented step (prompt injection simulation included): pass
