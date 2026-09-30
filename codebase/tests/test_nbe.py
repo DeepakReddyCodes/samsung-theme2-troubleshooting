@@ -591,3 +591,58 @@ def test_eig_sub_tolerance_positive_eig_selected(engine):
     assert resp.selected_evidence is not None
     assert resp.selected_evidence.eig_score > 0.0
     assert resp.selected_evidence.eig_score < 1e-9
+
+def test_unknown_observation_rejected_even_if_not_in_likelihoods(engine):
+    req = NBERequest(
+        hypotheses=[Hypothesis(id="h1", description="desc", prior_probability=1.0)],
+        available_evidence=[],
+        observations=[EvidenceObservation(evidence_id="e1", is_true=True)],
+        likelihoods=[]
+    )
+    with pytest.raises(ValueError, match="Observation references unknown evidence_id: e1"):
+        engine.evaluate(req)
+
+def test_tie_breaking_order_independence_reversed(engine):
+    # This explicitly ensures the same ID is chosen regardless of candidate list ordering
+    req1 = NBERequest(
+        hypotheses=[
+            Hypothesis(id="h1", description="Problem A", prior_probability=0.5),
+            Hypothesis(id="h2", description="Problem B", prior_probability=0.5)
+        ],
+        available_evidence=[
+            Evidence(id="e1", description="Ev 1", cost=1.0),
+            Evidence(id="e2", description="Ev 2", cost=1.0)
+        ],
+        observations=[],
+        likelihoods=[
+            EvidenceLikelihood(evidence_id="e1", hypothesis_id="h1", probability_true=0.9),
+            EvidenceLikelihood(evidence_id="e1", hypothesis_id="h2", probability_true=0.1),
+            EvidenceLikelihood(evidence_id="e2", hypothesis_id="h1", probability_true=0.9),
+            EvidenceLikelihood(evidence_id="e2", hypothesis_id="h2", probability_true=0.1)
+        ],
+        sufficiency_threshold=0.9
+    )
+
+    req2 = NBERequest(
+        hypotheses=[
+            Hypothesis(id="h1", description="Problem A", prior_probability=0.5),
+            Hypothesis(id="h2", description="Problem B", prior_probability=0.5)
+        ],
+        available_evidence=[
+            Evidence(id="e2", description="Ev 2", cost=1.0),
+            Evidence(id="e1", description="Ev 1", cost=1.0)
+        ],
+        observations=[],
+        likelihoods=[
+            EvidenceLikelihood(evidence_id="e1", hypothesis_id="h1", probability_true=0.9),
+            EvidenceLikelihood(evidence_id="e1", hypothesis_id="h2", probability_true=0.1),
+            EvidenceLikelihood(evidence_id="e2", hypothesis_id="h1", probability_true=0.9),
+            EvidenceLikelihood(evidence_id="e2", hypothesis_id="h2", probability_true=0.1)
+        ],
+        sufficiency_threshold=0.9
+    )
+
+    resp1 = engine.evaluate(req1)
+    resp2 = engine.evaluate(req2)
+    assert resp1.selected_evidence.evidence_id == "e1"
+    assert resp2.selected_evidence.evidence_id == "e1"

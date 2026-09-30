@@ -63,6 +63,7 @@ class NBEEvaluationEngine:
                 raise ValueError(f"Duplicate evidence candidate ID: {e.id}")
             seen_evidence.add(e.id)
 
+        # Observations must refer to explicitly declared evidence items
         seen_observations = set()
         for o in request.observations:
             if o.evidence_id not in seen_evidence:
@@ -79,8 +80,7 @@ class NBEEvaluationEngine:
 
         observations = {o.evidence_id: o.is_true for o in request.observations}
 
-        # Validate referential integrity for observations against available evidence if needed,
-        # or we just validate likelihoods. The instruction says: "every likelihood evidence_id must refer to a declared available evidence item or explicitly declared observed-evidence item".
+        # Validate that likelihoods correctly refer back to explicitly declared evidence.
         likelihoods = {} # likelihoods[e_id][h_id] = P(E=True|H)
         for lh in request.likelihoods:
             if lh.hypothesis_id not in priors:

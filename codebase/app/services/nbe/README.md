@@ -49,7 +49,8 @@ This module is currently isolated for Workstream W05E. Its intended place in the
 - `tests/test_nbe.py`: Mathematical correctness unit tests.
 ## Current Implementation Semantics
 - The sufficiency threshold of `0.9` is an ENGINEERING DECISION, not a Samsung requirement.
-- EIG computation relies on a numerical tolerance (`EIG_TOLERANCE=1e-9`) to filter out floating-point noise around zero rather than an arbitrary positive selection cutoff.
+- EIG computation relies on a numerical tolerance (`EIG_TOLERANCE=1e-9`) strictly to filter out floating-point artifacts/noise around zero (`abs(eig) <= 1e-9` when negative). Genuine mathematically positive EIG values (even those below `1e-9`) remain fully eligible for selection.
+- `available_evidence` serves as the authoritative universe of evidence. Any observation or likelihood must reference a defined ID within this set.
 - Any evidence evaluating to missing or incomplete likelihood matrices across competing hypotheses is explicitly excluded. The engine does not fabricate `0.5` prior assignments for missing target mappings.
 - Deterministic tie-breaking enforces stable selection logic by picking identical tied outputs according to alphabetic ID sorting.
 - Zero-cost evidence natively scales to `+inf` utility only when mathematical EIG > numerical tolerance noise, and correctly evaluates to `0` otherwise.
