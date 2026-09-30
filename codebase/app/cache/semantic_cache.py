@@ -159,6 +159,12 @@ class CacheVersionManager:
         curr_siis = compute_file_hash(self.siis_path) if self.siis_path else "NO_SIIS"
         return curr_cat == self.catalog_hash and curr_siis == self.siis_hash
 
+    def refresh(self) -> None:
+        """Update internal hashes from files and regenerate the token atomically."""
+        self.catalog_hash = compute_file_hash(self.catalog_path) if self.catalog_path else "NO_CATALOG"
+        self.siis_hash = compute_file_hash(self.siis_path) if self.siis_path else "NO_SIIS"
+        self._version_token = self._generate_token()
+
 
 class FastPathSemanticCache:
     """High-performance dual-tier semantic cache satisfying official P95 <= 300ms SLA."""
@@ -413,13 +419,19 @@ class FastPathSemanticCache:
         response: ContextDeeplinkResponse,
         siis_response: Optional[Union[Dict[str, Any], str]] = None,
         scenario_id: Optional[str] = None,
-        validate: bool = True,
+        _internal_validate_override: bool = True,
         intent_vector: Optional[np.ndarray] = None,
         rebuild_matrix: bool = True,
     ) -> bool:
         """Store a validated ContextDeeplinkResponse in the cache."""
-        # Enforce validation firewall before storing
-        if validate:
+
+        # Live dependency invalidation before put
+        if not self.version_manager.check_version():
+            self.version_manager.refresh()
+            self.invalidate(reason="dependency_change_on_put")
+
+        # Enforce strict validation firewall before storing. No public bypass.
+        if _internal_validate_override:
             validated_resp, errors = self.firewall.validate_response(response, allow_repair=False)
             if errors:
                 logger.error(f"Cannot cache invalid response: {errors}")
@@ -469,25 +481,36 @@ class FastPathSemanticCache:
 
     def get_stats(self) -> Dict[str, Any]:
         """Compute performance percentiles and cache statistics."""
-        latencies = sorted(self.latencies_ms) if self.latencies_ms else [0.0]
-        n = len(latencies)
-        p50 = latencies[int(n * 0.50)] if n > 0 else 0.0
-        p95 = latencies[min(int(n * 0.95), n - 1)] if n > 0 else 0.0
-        p99 = latencies[min(int(n * 0.99), n - 1)] if n > 0 else 0.0
+        with self._lock:
+            latencies = sorted(self.latencies_ms) if self.latencies_ms else [0.0]
+            total_lookups = self.total_lookups
+            exact_hits = self.exact_hits
+            semantic_hits = self.semantic_hits
+            misses = self.misses
+            entries_count = len(self.exact_store)
+            version_token = self.version_manager.version_token
+            has_embeddings = self.model is not None
 
-        hit_count = self.exact_hits + self.semantic_hits
-        hit_rate = (hit_count / self.total_lookups) if self.total_lookups > 0 else 0.0
+        if latencies and len(latencies) > 0:
+            p50 = float(np.percentile(latencies, 50))
+            p95 = float(np.percentile(latencies, 95))
+            p99 = float(np.percentile(latencies, 99))
+        else:
+            p50 = p95 = p99 = 0.0
+
+        hit_count = exact_hits + semantic_hits
+        hit_rate = (hit_count / total_lookups) if total_lookups > 0 else 0.0
 
         return {
-            "total_lookups": self.total_lookups,
-            "exact_hits": self.exact_hits,
-            "semantic_hits": self.semantic_hits,
-            "misses": self.misses,
+            "total_lookups": total_lookups,
+            "exact_hits": exact_hits,
+            "semantic_hits": semantic_hits,
+            "misses": misses,
             "hit_rate": round(hit_rate, 4),
-            "cached_entries_count": len(self.exact_store),
+            "cached_entries_count": entries_count,
             "p50_latency_ms": round(p50, 3),
             "p95_latency_ms": round(p95, 3),
             "p99_latency_ms": round(p99, 3),
-            "version_token": self.version_manager.version_token,
-            "has_embeddings": self.model is not None,
+            "version_token": version_token,
+            "has_embeddings": has_embeddings,
         }

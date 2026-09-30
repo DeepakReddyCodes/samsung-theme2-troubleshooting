@@ -12,10 +12,10 @@ def valid_response():
     return ContextDeeplinkResponse(
         contexts=[
             Goal(
-                goal="Fix wifi",
+                goal="Follow these steps to perform this Fix Wifi Troubleshooting",
                 title="Fix wifi",
                 score=1.0,
-                actions=[Action(actionName="Turn on wifi", description="It will fix the wifi issue", category=actionCategory.auto, stepGroups=[StepGroup(steps=["test"], actionableDeeplink=Deeplink(deeplink="bixby://test", description="test"))])]
+                actions=[Action(actionName="Turn on wifi", description="It will fix the wifi issue", category=actionCategory.auto, stepGroups=[StepGroup(steps=["test"], actionableDeeplink=Deeplink(deeplink="bixby://masked/act/fdd7f62e24", description="test"))])]
             )
         ]
     )
@@ -60,7 +60,7 @@ def test_cache_poisoning(cache):
     )
 
     # Attempt to cache the invalid response
-    stored = cache.put("Query for bad plan", invalid_response, validate=True)
+    stored = cache.put("Query for bad plan", invalid_response, _internal_validate_override=True)
 
     # Should be rejected by validation firewall
     assert stored is False, "Invalid responses should not be cached"
@@ -84,7 +84,7 @@ def test_cache_return_validation(cache):
     )
 
     # Put a valid response
-    cache.put("my validate query", valid, validate=False)
+    cache.put("my validate query", valid, _internal_validate_override=False)
 
     # Mutate the exact store to make it invalid (simulating schema/catalog change over time)
     # The title should be 2-3 words. We will make it 8 words. Since allow_repair=False is now used on retrieval, this should fail.
@@ -95,7 +95,7 @@ def test_cache_return_validation(cache):
     assert meta["hit_type"] == "invalid_cached"
 
 def test_cache_engine_version_miss(cache, valid_response):
-    cache.put("query version", valid_response, validate=False)
+    cache.put("query version", valid_response, _internal_validate_override=False)
 
     # Manually modify the version token requirement
     cache.version_manager.engine_version = "2.0.0"
@@ -106,7 +106,7 @@ def test_cache_engine_version_miss(cache, valid_response):
     assert meta["cache_hit"] is False
 
 def test_cache_catalog_version_miss(cache, valid_response):
-    cache.put("query catalog", valid_response, validate=False)
+    cache.put("query catalog", valid_response, _internal_validate_override=False)
 
     # Manually modify catalog hash
     cache.version_manager.catalog_hash = "newhash123"
@@ -131,3 +131,44 @@ def test_prewarm_correctness(cache):
     # Check that prewarming populated the cache using exactly identical rules
     assert len(cache.exact_store) > 0
     assert stats["scenarios_prewarmed"] > 0
+
+
+
+def test_real_dependency_invalidation(valid_response, tmp_path):
+    import json
+    import time
+    from app.cache.semantic_cache import FastPathSemanticCache
+
+    cat_path = tmp_path / "catalog.json"
+    cat_path.write_text('{"deeplinks": [{"deeplink": "bixby://masked/act/fdd7f62e24", "validation": {"deeplink": "bixby://val"}}]}')
+
+    # Init cache
+    c = FastPathSemanticCache(catalog_path=cat_path, enable_embeddings=False)
+
+    c.put("test query", valid_response, _internal_validate_override=False)
+    resp, meta = c.get("test query")
+    assert meta["cache_hit"] is True
+
+    # Sleep briefly to ensure mtime changes if relying on that, though we rely on hash
+    # Actually just modifying contents changes hash
+    cat_path.write_text('{"deeplinks": []}')
+
+    resp2, meta2 = c.get("test query")
+    assert meta2["cache_hit"] is False, "Should miss because catalog hash changed"
+    assert len(c.exact_store) == 0, "Cache should have been invalidated"
+
+
+def test_semantic_invalidation_consistency(valid_response):
+    from app.cache.semantic_cache import FastPathSemanticCache
+    c = FastPathSemanticCache(enable_embeddings=True)
+    c.put("semantic query", valid_response, _internal_validate_override=False)
+
+    assert len(c.entries_list) == 1
+    assert c.vector_matrix is not None
+    assert c.vector_matrix.shape[0] == 1
+
+    c.invalidate("test")
+
+    assert len(c.exact_store) == 0
+    assert len(c.entries_list) == 0
+    assert c.vector_matrix is None
