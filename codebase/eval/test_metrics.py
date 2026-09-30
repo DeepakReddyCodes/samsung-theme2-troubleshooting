@@ -117,7 +117,7 @@ def test_deeplink_resolution_dummy_positives():
     assert res_concrete["unable_to_verify_provenance"] == 1
     assert res_concrete["invalid_attempts"] == 0
 
-    # Concrete-looking description WITH provenance metadata => Verified
+    # Concrete-looking description WITH provenance metadata, but verifiable => Verified
     resp_provenance = {
         "contexts": [{
             "actions": [{
@@ -131,10 +131,30 @@ def test_deeplink_resolution_dummy_positives():
             }]
         }]
     }
-    res_provenance = check_deeplink_resolution(resp_provenance, valid_catalog, valid_validation)
+    siis_text = "To fix this, adjust your Display Settings."
+    res_provenance = check_deeplink_resolution(resp_provenance, valid_catalog, valid_validation, siis_text)
     assert res_provenance["verified_dummy_positives"] == 1
     assert res_provenance["unable_to_verify_provenance"] == 0
     assert res_provenance["invalid_attempts"] == 0
+
+    # Concrete-looking description WITH provenance metadata, but unverifiable (self-asserted) => Unable to verify
+    resp_provenance_fake = {
+        "contexts": [{
+            "actions": [{
+                "stepGroups": [{
+                    "actionableDeeplink": {
+                        "deeplink": "bixby://dummy_positive",
+                        "description": "It will open Developer Options",
+                        "siis_provenance": {"source_match": "Developer Options"}
+                    }
+                }]
+            }]
+        }]
+    }
+    res_provenance_fake = check_deeplink_resolution(resp_provenance_fake, valid_catalog, valid_validation, siis_text)
+    assert res_provenance_fake["verified_dummy_positives"] == 0
+    assert res_provenance_fake["unable_to_verify_provenance"] == 1
+    assert res_provenance_fake["invalid_attempts"] == 0
 
     # Generic description => Invalid
     resp_generic = {

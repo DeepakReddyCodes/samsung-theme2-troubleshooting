@@ -55,7 +55,7 @@ def check_action_validity(response_data: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def check_deeplink_resolution(response_data: Dict[str, Any], valid_catalog_uris: set, valid_validation_uris: set) -> Dict[str, Any]:
+def check_deeplink_resolution(response_data: Dict[str, Any], valid_catalog_uris: set, valid_validation_uris: set, siis_text: str = "") -> Dict[str, Any]:
     """
     Measures exact catalog URI resolution, validation URIs, dummy-positive validation, and invalid URIs.
     Explicitly tracks inability to verify SIIS provenance from the final JSON structure alone.
@@ -70,6 +70,8 @@ def check_deeplink_resolution(response_data: Dict[str, Any], valid_catalog_uris:
     verified_dummy_positives = 0
     unable_to_verify_provenance = 0
     invalid_attempts = 0
+
+    siis_lower = siis_text.lower()
 
     for act in contexts[0].get("actions", []):
         for sg in act.get("stepGroups", []):
@@ -96,9 +98,14 @@ def check_deeplink_resolution(response_data: Dict[str, Any], valid_catalog_uris:
                         # if the field indicates it was derived, we count it as verified. If missing, UNABLE_TO_VERIFY.
                         provenance_meta = dl_obj.get("siis_provenance")
 
-                        if provenance_meta and isinstance(provenance_meta, dict) and provenance_meta.get("source_match"):
-                            # If verifiable metadata is present proving derivation -> PASS
-                            verified_dummy_positives += 1
+                        if provenance_meta and isinstance(provenance_meta, dict):
+                            source_match = provenance_meta.get("source_match", "")
+
+                            # Actual verification: Does the asserted source match exist in the provided SIIS evidence?
+                            if source_match and source_match.lower() in siis_lower:
+                                verified_dummy_positives += 1
+                            else:
+                                unable_to_verify_provenance += 1
                         else:
                             # The target looks concrete heuristically, but we cannot establish end-to-end provenance -> UNABLE_TO_VERIFY
                             unable_to_verify_provenance += 1

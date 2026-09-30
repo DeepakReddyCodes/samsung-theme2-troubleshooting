@@ -94,7 +94,7 @@ def run_evaluation():
             if val["valid_structure"] and val["valid_descriptions"]:
                 results["canonical"]["valid_actions"] += 1
 
-            dl_res = check_deeplink_resolution(data, valid_catalog_uris, valid_validation_uris)
+            dl_res = check_deeplink_resolution(data, valid_catalog_uris, valid_validation_uris, item["siis_response"]["content"])
             results["canonical"]["dl_catalog"] += dl_res["catalog_matches"]
             results["canonical"].setdefault("dl_validation", 0)
             results["canonical"]["dl_validation"] += dl_res["validation_matches"]
