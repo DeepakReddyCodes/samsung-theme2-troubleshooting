@@ -290,9 +290,11 @@ class FastPathSemanticCache:
         ]
 
         for a1, a2 in conflicting_pairs:
-            if a1 in c_int and a2 not in c_int and a2 in q_int:
+            # If queries have opposing intents, they conflict.
+            # E.g., if one asks to enable, and the other asks to disable.
+            if a1 in c_int and a2 in q_int:
                 return True
-            if a2 in c_int and a1 not in c_int and a1 in q_int:
+            if a2 in c_int and a1 in q_int:
                 return True
         return False
 
@@ -322,6 +324,8 @@ class FastPathSemanticCache:
         # 1. Tier 1: Exact Hash Hit
         with self._lock:
             entry = self.exact_store.get(exact_key)
+            snapshot_gen = self._invalidation_gen
+            snapshot_token = self.version_manager.version_token
 
         if entry:
             # Version isolation
@@ -338,6 +342,16 @@ class FastPathSemanticCache:
 
                 t_ms = (time.perf_counter() - t0) * 1000.0
                 with self._lock:
+                    if self._invalidation_gen != snapshot_gen or self.version_manager.version_token != snapshot_token:
+                        # Cache invalidated or dependencies changed during validation
+                        return None, {
+                            "cache_hit": False,
+                            "hit_type": "miss",
+                            "latency_ms": round(t_ms, 3),
+                            "scenario_id": None,
+                            "confidence": 0.0,
+                        }
+
                     self.latencies_ms.append(t_ms)
                 return validated_resp, {
                     "cache_hit": True,
