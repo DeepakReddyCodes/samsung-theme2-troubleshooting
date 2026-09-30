@@ -549,3 +549,21 @@ def test_grounding_contextual_contradiction(engine):
     assert len(plan.contexts) == 1
     assert len(plan.contexts[0].actions) == 1
     assert plan.contexts[0].actions[0].stepGroups[0].steps[0] == "Turn on Bluetooth."
+
+def test_grounding_empty_siis_dict(engine):
+    """Verify empty dictionary payload produces empty contexts."""
+    plan = engine.extract_and_build("query", {})
+    assert isinstance(plan, ContextDeeplinkResponse)
+    assert len(plan.contexts) == 0
+
+def test_grounding_empty_title_content_dict(engine):
+    """Verify dict with empty string fields produces empty contexts."""
+    plan = engine.extract_and_build("query", {"title": "", "content": ""})
+    assert isinstance(plan, ContextDeeplinkResponse)
+    assert len(plan.contexts) == 0
+
+def test_grounding_non_empty_title_empty_content(engine):
+    """Verify non-empty title but empty content returns empty contexts if no grounded steps."""
+    plan = engine.extract_and_build("query", {"title": "Device Support", "content": ""})
+    assert isinstance(plan, ContextDeeplinkResponse)
+    assert len(plan.contexts) == 0

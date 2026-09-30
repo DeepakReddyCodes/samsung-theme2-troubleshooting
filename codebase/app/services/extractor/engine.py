@@ -63,17 +63,22 @@ class ColdPathExtractionEngine:
             return "", ""
 
         if isinstance(siis_response, dict):
-            title = str(siis_response.get("title", "")).strip() or "Device Support"
-            content = str(siis_response.get("content", "")).strip() or title
+            title = str(siis_response.get("title", "")).strip()
+            content = str(siis_response.get("content", "")).strip()
+            if not content:
+                return "", ""
             return title, content
 
         if isinstance(siis_response, str):
-            lines = [l.strip() for l in siis_response.strip().split("\n") if l.strip()]
-            title = lines[0] if lines else "Device Support"
-            content = siis_response.strip()
+            siis_str = siis_response.strip()
+            if not siis_str:
+                return "", ""
+            lines = [l.strip() for l in siis_str.split("\n") if l.strip()]
+            title = lines[0] if lines else ""
+            content = siis_str
             return title, content
 
-        return "Device Support", str(siis_response)
+        return "", ""
 
     def extract_and_build(
         self,
@@ -183,7 +188,7 @@ class ColdPathExtractionEngine:
                 response=final_response,
                 siis_response=siis_response,
                 scenario_id=scenario_id,
-                validate=False,  # Already validated
+                validate=True,
             )
 
         return final_response
