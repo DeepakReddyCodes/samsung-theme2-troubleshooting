@@ -117,44 +117,32 @@ def test_deeplink_resolution_dummy_positives():
     assert res_concrete["unable_to_verify_provenance"] == 1
     assert res_concrete["invalid_attempts"] == 0
 
-    # Concrete-looking description WITH provenance metadata, but verifiable => Verified
+    # Concrete-looking description independently verified against SIIS text => Verified
     resp_provenance = {
         "contexts": [{
             "actions": [{
                 "stepGroups": [{
                     "actionableDeeplink": {
                         "deeplink": "bixby://dummy_positive",
-                        "description": "It will open Display Settings",
-                        "siis_provenance": {"source_match": "Display Settings"}
+                        "description": "It will open Developer Options",
+                        "siis_provenance": {"source_match": "Developer Options"} # Ignored by logic
                     }
                 }]
             }]
         }]
     }
-    siis_text = "To fix this, adjust your Display Settings."
-    res_provenance = check_deeplink_resolution(resp_provenance, valid_catalog, valid_validation, siis_text)
+    siis_text_valid = "To fix this, you must enable Developer Options in the device menu."
+    res_provenance = check_deeplink_resolution(resp_provenance, valid_catalog, valid_validation, siis_text_valid)
     assert res_provenance["verified_dummy_positives"] == 1
     assert res_provenance["unable_to_verify_provenance"] == 0
     assert res_provenance["invalid_attempts"] == 0
 
-    # Concrete-looking description WITH provenance metadata, but unverifiable (self-asserted) => Unable to verify
-    resp_provenance_fake = {
-        "contexts": [{
-            "actions": [{
-                "stepGroups": [{
-                    "actionableDeeplink": {
-                        "deeplink": "bixby://dummy_positive",
-                        "description": "It will open Developer Options",
-                        "siis_provenance": {"source_match": "Developer Options"}
-                    }
-                }]
-            }]
-        }]
-    }
-    res_provenance_fake = check_deeplink_resolution(resp_provenance_fake, valid_catalog, valid_validation, siis_text)
-    assert res_provenance_fake["verified_dummy_positives"] == 0
-    assert res_provenance_fake["unable_to_verify_provenance"] == 1
-    assert res_provenance_fake["invalid_attempts"] == 0
+    # Concrete-looking description but not supported by SIIS text => Unable to Verify
+    siis_text_invalid = "To fix this, simply restart the device."
+    res_provenance_invalid = check_deeplink_resolution(resp_provenance, valid_catalog, valid_validation, siis_text_invalid)
+    assert res_provenance_invalid["verified_dummy_positives"] == 0
+    assert res_provenance_invalid["unable_to_verify_provenance"] == 1
+    assert res_provenance_invalid["invalid_attempts"] == 0
 
     # Generic description => Invalid
     resp_generic = {

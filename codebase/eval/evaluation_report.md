@@ -3,7 +3,7 @@
 ## Metadata
 - **Total Scenarios Evaluated**: 37
 - **Total Evaluator Errors**: 0
-- **Timestamp**: 1790733559.8911254
+- **Timestamp**: 1790737834.7859766
 
 ## 1. Grounding (Measured via Lexical Approximation)
 - **Unseen Actionable Scenarios Checked**: 4
@@ -35,9 +35,9 @@
 - **Strict Semantic Correctness Count**: 2 / 5 total polarity cases
 
 ## 7. Latency (ms)
-- **Canonical**: p50: 3.48 | p95: 9.43 | p99: 30.07
-- **Paraphrase**: p50: 242.16 | p95: 499.96 | p99: 502.67
-- **Unseen**: p50: 2.29 | p95: 3.41 | p99: 3.56
+- **Canonical**: p50: 2.56 | p95: 6.30 | p99: 9.72
+- **Paraphrase**: p50: 29.33 | p95: 213.22 | p99: 235.40
+- **Unseen**: p50: 1.95 | p95: 2.59 | p99: 2.67
 *(Limitation: The latencies above rely on deterministic/offline benchmarking and cold-path fallbacks. They do not represent real LLM/API latency, which will be measured eventually.)*
 
 ## 8. Cost

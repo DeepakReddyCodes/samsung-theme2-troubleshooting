@@ -90,24 +90,24 @@ def check_deeplink_resolution(response_data: Dict[str, Any], valid_catalog_uris:
                     if not desc or desc in ["settings", "device settings", "open settings"]:
                         # Missing or generic descriptions cannot act as a concrete dummy fallback -> FAIL
                         invalid_attempts += 1
-                    # 2. Heuristic concrete-target plausibility check (Not Proof)
+                    # 2. Concrete dummy positive -> Independent Verification
                     else:
-                        # W06 evaluator cannot prove SIIS provenance strictly from the JSON payload
-                        # unless provenance metadata is present and verifiable. Merely having the field is NOT proof.
-                        # It must be actually verifiable (e.g. matching something in SIIS). For evaluation purposes,
-                        # if the field indicates it was derived, we count it as verified. If missing, UNABLE_TO_VERIFY.
-                        provenance_meta = dl_obj.get("siis_provenance")
+                        # The evaluator MUST NOT trust self-asserted metadata like `siis_provenance.source_match`.
+                        # Instead, it independently attempts to verify the target against the SIIS evidence.
 
-                        if provenance_meta and isinstance(provenance_meta, dict):
-                            source_match = provenance_meta.get("source_match", "")
+                        # Extract plausible target words from the description (stripping common boilerplate)
+                        clean_desc = desc.replace("it will open ", "").replace("navigate to ", "").strip()
+                        target_words = [w for w in clean_desc.split() if len(w) > 3]
 
-                            # Actual verification: Does the asserted source match exist in the provided SIIS evidence?
-                            if source_match and source_match.lower() in siis_lower:
+                        if target_words:
+                            # Verify if the target actually exists in the SIIS text
+                            match_count = sum(1 for w in target_words if w in siis_lower)
+                            # If we can independently match the core target words to the SIIS evidence, it's verified
+                            if match_count / len(target_words) >= 0.5:
                                 verified_dummy_positives += 1
                             else:
                                 unable_to_verify_provenance += 1
                         else:
-                            # The target looks concrete heuristically, but we cannot establish end-to-end provenance -> UNABLE_TO_VERIFY
                             unable_to_verify_provenance += 1
                 else:
                     # Non-catalog URIs or generic invalid formats fall here -> FAIL
