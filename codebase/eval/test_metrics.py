@@ -6,6 +6,14 @@ from eval.metrics import (
     check_deeplink_resolution
 )
 
+def test_grounding_empty_response():
+    resp = {"contexts": []}
+    result = check_grounding(resp, "Some text")
+    # Empty response should explicitly not be marked as successfully "grounded" to avoid false inflation
+    assert result["status"] == "NOT_EVALUATED"
+    assert result["is_empty"] is True
+    assert "not evaluated for actionable grounding" in result["note"]
+
 def test_grounding_valid_step():
     siis_text = "To fix the issue, open Settings and then navigate to Display to reset the configuration."
     resp = {
@@ -17,7 +25,7 @@ def test_grounding_valid_step():
         }]
     }
     result = check_grounding(resp, siis_text)
-    assert result["is_grounded"] is True
+    assert result["status"] == "PASS"
     assert len(result["unsupported_facts"]) == 0
 
 def test_grounding_unsupported_step():
@@ -31,16 +39,8 @@ def test_grounding_unsupported_step():
         }]
     }
     result = check_grounding(resp, siis_text)
-    assert result["is_grounded"] is False
+    assert result["status"] == "FAIL"
     assert "Factory" in result["unsupported_facts"][0] or "Reset" in result["unsupported_facts"][0]
-
-def test_grounding_empty_response():
-    resp = {"contexts": []}
-    result = check_grounding(resp, "Some text")
-    # Empty response should explicitly not be marked as successfully "grounded" to avoid false inflation
-    assert result["is_grounded"] is False
-    assert result["is_empty"] is True
-    assert "not evaluated for actionable grounding" in result["note"]
 
 def test_polarity_correctness():
     # True positives with valid target
