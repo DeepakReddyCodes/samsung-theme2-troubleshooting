@@ -60,7 +60,7 @@ def test_cache_poisoning(cache):
     )
 
     # Attempt to cache the invalid response
-    stored = cache.put("Query for bad plan", invalid_response, _internal_prevalidated=False)
+    stored = cache.put("Query for bad plan", invalid_response)
 
     # Should be rejected by validation firewall
     assert stored is False, "Invalid responses should not be cached"
@@ -75,7 +75,7 @@ def test_cache_return_validation(cache):
     valid = ContextDeeplinkResponse(
         contexts=[
             Goal(
-                goal="Fix issue",
+                goal="Follow these steps to perform this Fix issue Troubleshooting",
                 title="Fix issue",
                 score=1.0,
                 actions=[Action(actionName="Do something", description="It will fix the issue", category=actionCategory.auto, stepGroups=[StepGroup(steps=["step"], actionableDeeplink=Deeplink(deeplink="bixby://masked/act/fdd7f62e24", description="test"))])]
@@ -84,7 +84,7 @@ def test_cache_return_validation(cache):
     )
 
     # Put a valid response
-    cache.put("my validate query", valid, _internal_prevalidated=True)
+    cache.put("my validate query", valid)
 
     # Mutate the exact store to make it invalid (simulating schema/catalog change over time)
     # The title should be 2-3 words. We will make it 8 words. Since allow_repair=False is now used on retrieval, this should fail.
@@ -95,7 +95,7 @@ def test_cache_return_validation(cache):
     assert meta["hit_type"] == "invalid_cached"
 
 def test_cache_engine_version_miss(cache, valid_response):
-    cache.put("query version", valid_response, _internal_prevalidated=True)
+    cache.put("query version", valid_response)
 
     # Manually modify the version token requirement
     cache.version_manager.engine_version = "2.0.0"
@@ -106,7 +106,7 @@ def test_cache_engine_version_miss(cache, valid_response):
     assert meta["cache_hit"] is False
 
 def test_cache_catalog_version_miss(cache, valid_response):
-    cache.put("query catalog", valid_response, _internal_prevalidated=True)
+    cache.put("query catalog", valid_response)
 
     # Manually modify catalog hash
     cache.version_manager.catalog_hash = "newhash123"
@@ -145,7 +145,7 @@ def test_real_dependency_invalidation(valid_response, tmp_path):
     # Init cache
     c = FastPathSemanticCache(catalog_path=cat_path, enable_embeddings=False)
 
-    c.put("test query", valid_response, _internal_prevalidated=True)
+    c.put("test query", valid_response)
     resp, meta = c.get("test query")
     assert meta["cache_hit"] is True
 
@@ -170,7 +170,7 @@ def test_real_dependency_invalidation(valid_response, tmp_path):
     new_token = c.version_manager.version_token
 
     # Cache the item again under the NEW dependency version
-    c.put("test query", valid_response, _internal_prevalidated=True)
+    c.put("test query", valid_response)
 
     # Second lookup should HIT and NOT invalidate again because the hash is stable
     resp3, meta3 = c.get("test query")
@@ -181,7 +181,7 @@ def test_real_dependency_invalidation(valid_response, tmp_path):
 def test_semantic_invalidation_consistency(valid_response):
     from app.cache.semantic_cache import FastPathSemanticCache
     c = FastPathSemanticCache(enable_embeddings=True)
-    c.put("semantic query", valid_response, _internal_prevalidated=True)
+    c.put("semantic query", valid_response)
 
     assert len(c.entries_list) == 1
     assert c.vector_matrix is not None
@@ -192,3 +192,50 @@ def test_semantic_invalidation_consistency(valid_response):
     assert len(c.exact_store) == 0
     assert len(c.entries_list) == 0
     assert c.vector_matrix is None
+
+
+def test_concurrent_stress(cache, valid_response):
+    import threading
+    import random
+
+    stop_event = threading.Event()
+    exceptions = []
+
+    def writer():
+        try:
+            for i in range(100):
+                if stop_event.is_set(): break
+                cache.put(f"query_{i}", valid_response)
+        except Exception as e:
+            exceptions.append(e)
+
+    def reader():
+        try:
+            for i in range(100):
+                if stop_event.is_set(): break
+                cache.get(f"query_{random.randint(0, 100)}")
+        except Exception as e:
+            exceptions.append(e)
+
+    def invalidator():
+        try:
+            for i in range(10):
+                if stop_event.is_set(): break
+                cache.invalidate()
+                import time; time.sleep(0.01)
+        except Exception as e:
+            exceptions.append(e)
+
+    threads = []
+    for _ in range(5): threads.append(threading.Thread(target=writer))
+    for _ in range(5): threads.append(threading.Thread(target=reader))
+    threads.append(threading.Thread(target=invalidator))
+
+    for t in threads: t.start()
+    for t in threads: t.join()
+
+    assert not exceptions, f"Concurrent stress test raised exceptions: {exceptions}"
+
+    # Check stats safely
+    stats = cache.get_stats()
+    assert stats["total_lookups"] >= 0

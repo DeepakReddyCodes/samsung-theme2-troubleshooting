@@ -136,6 +136,7 @@ class CacheVersionManager:
         engine_version: str = DEFAULT_ENGINE_VERSION,
         schema_version: str = DEFAULT_SCHEMA_VERSION,
     ):
+        self._vm_lock = threading.Lock()
         self.engine_version = engine_version
         self.schema_version = schema_version
         self.catalog_path = catalog_path
@@ -149,21 +150,26 @@ class CacheVersionManager:
         payload = f"{self.engine_version}::{self.schema_version}::{self.catalog_hash}::{self.siis_hash}"
         return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16]
 
-    @property
-    def version_token(self) -> str:
-        return self._version_token
-
     def check_version(self) -> bool:
         """Verify if current underlying files still match the stored token."""
         curr_cat = compute_file_hash(self.catalog_path) if self.catalog_path else "NO_CATALOG"
         curr_siis = compute_file_hash(self.siis_path) if self.siis_path else "NO_SIIS"
-        return curr_cat == self.catalog_hash and curr_siis == self.siis_hash
+        with self._vm_lock:
+            return curr_cat == self.catalog_hash and curr_siis == self.siis_hash
 
     def refresh(self) -> None:
         """Update internal hashes from files and regenerate the token atomically."""
-        self.catalog_hash = compute_file_hash(self.catalog_path) if self.catalog_path else "NO_CATALOG"
-        self.siis_hash = compute_file_hash(self.siis_path) if self.siis_path else "NO_SIIS"
-        self._version_token = self._generate_token()
+        new_cat = compute_file_hash(self.catalog_path) if self.catalog_path else "NO_CATALOG"
+        new_siis = compute_file_hash(self.siis_path) if self.siis_path else "NO_SIIS"
+        with self._vm_lock:
+            self.catalog_hash = new_cat
+            self.siis_hash = new_siis
+            self._version_token = self._generate_token()
+
+    @property
+    def version_token(self) -> str:
+        with self._vm_lock:
+            return self._version_token
 
 
 class FastPathSemanticCache:
@@ -196,6 +202,7 @@ class FastPathSemanticCache:
         # Tier 2: Semantic vector pool
         self.entries_list: List[CacheEntry] = []
         self.vector_matrix: Optional[np.ndarray] = None
+        self._invalidation_gen = 0
 
         # Embedding model
         self.model = None
@@ -345,6 +352,8 @@ class FastPathSemanticCache:
             has_model = self.model is not None
             has_matrix = self.vector_matrix is not None
             num_entries = len(self.entries_list)
+            snapshot_gen = self._invalidation_gen
+            snapshot_token = self.version_manager.version_token
 
         if has_model and has_matrix and num_entries > 0:
             query_vec = self._encode_text(norm_query)
@@ -389,16 +398,20 @@ class FastPathSemanticCache:
                                 logger.error(f"Semantic cached response failed validation on return: {errors}")
                                 continue  # Try next candidate if available
 
-                            t_ms = (time.perf_counter() - t0) * 1000.0
                             with self._lock:
+                                if self._invalidation_gen != snapshot_gen or self.version_manager.version_token != snapshot_token:
+                                    # Cache invalidated or dependencies changed during validation
+                                    continue
+
+                                t_ms = (time.perf_counter() - t0) * 1000.0
                                 self.latencies_ms.append(t_ms)
-                            return validated_resp, {
-                                "cache_hit": True,
-                                "hit_type": "semantic",
-                                "latency_ms": round(t_ms, 3),
-                                "scenario_id": candidate.scenario_id,
-                                "confidence": round(best_sim, 4),
-                            }
+                                return validated_resp, {
+                                    "cache_hit": True,
+                                    "hit_type": "semantic",
+                                    "latency_ms": round(t_ms, 3),
+                                    "scenario_id": candidate.scenario_id,
+                                    "confidence": round(best_sim, 4),
+                                }
 
         # 3. Cache Miss
         with self._lock:
@@ -421,7 +434,6 @@ class FastPathSemanticCache:
         scenario_id: Optional[str] = None,
         intent_vector: Optional[np.ndarray] = None,
         rebuild_matrix: bool = True,
-        _internal_prevalidated: bool = False,
     ) -> bool:
         """Store a validated ContextDeeplinkResponse in the cache."""
 
@@ -431,14 +443,11 @@ class FastPathSemanticCache:
             self.version_manager.refresh()
 
         # Enforce strict validation firewall before storing. No public bypass.
-        if not _internal_prevalidated:
-            validated_resp, errors = self.firewall.validate_response(response, allow_repair=False)
-            if errors:
-                logger.error(f"Cannot cache invalid response: {errors}")
-                return False
-            final_response = validated_resp
-        else:
-            final_response = response
+        validated_resp, errors = self.firewall.validate_response(response, allow_repair=False)
+        if errors:
+            logger.error(f"Cannot cache invalid response: {errors}")
+            return False
+        final_response = validated_resp
 
         norm_query = normalize_query(query)
         fingerprint = compute_siis_fingerprint(siis_response)
@@ -472,6 +481,7 @@ class FastPathSemanticCache:
         """Invalidate all cached entries."""
         logger.info(f"Invalidating fast-path cache. Reason: {reason}")
         with self._lock:
+            self._invalidation_gen += 1
             self.exact_store.clear()
             self.entries_list.clear()
             self.vector_matrix = None

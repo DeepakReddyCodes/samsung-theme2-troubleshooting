@@ -205,7 +205,7 @@ class ColdPathExtractionEngine:
                 response=final_response,
                 siis_response=siis_response,
                 scenario_id=scenario_id,
-                _internal_prevalidated=True,  # Already validated
+                  # Already validated
             )
 
         return final_response
