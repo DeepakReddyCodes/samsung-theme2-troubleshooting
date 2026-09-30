@@ -1,6 +1,6 @@
 # W02 Grounded Extraction Final Report
 
-**Commit SHA:** 2b32f347a6bf136a497c7ff79f8e277aa234c1c2
+**Commit SHA:** c8f2945b470e955b1add30a5dcd6398a7072139d
 **Base SHA:** c62505771b6063a5d363151ea51cfc0cfe43e876
 *(Note: The base commit on origin/main is `bf10432406fc7d28db210c9ea43061f61b867640` but we are validating against the requested target context).*
 
