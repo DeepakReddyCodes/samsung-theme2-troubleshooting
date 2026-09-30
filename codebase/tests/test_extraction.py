@@ -306,7 +306,7 @@ def test_deterministic_fallback_when_gemini_unavailable():
 
 
 def test_malformed_llm_output_recovery(engine):
-    """Verify engine recovers gracefully if intermediate provider produces empty actions."""
+    """Verify engine recovers gracefully if intermediate provider produces empty actions by returning empty response per W02 invariant."""
     class BrokenProvider(ILLMProvider):
         def extract(self, query: str, siis_title: str, siis_content: str) -> IntermediateIntent:
             return IntermediateIntent(topic="Error", goal_mode="Troubleshooting", title="Error", actions=[])
@@ -321,8 +321,7 @@ def test_malformed_llm_output_recovery(engine):
         siis_response={"title": "Some Title", "content": "Some content about device settings."},
     )
     assert isinstance(plan, ContextDeeplinkResponse)
-    assert len(plan.contexts) == 1
-    assert len(plan.contexts[0].actions) >= 1
+    assert len(plan.contexts) == 0
 
 
 def test_final_response_schema_validation(engine):
