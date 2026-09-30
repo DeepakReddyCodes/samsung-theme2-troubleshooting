@@ -567,3 +567,21 @@ def test_grounding_non_empty_title_empty_content(engine):
     plan = engine.extract_and_build("query", {"title": "Device Support", "content": ""})
     assert isinstance(plan, ContextDeeplinkResponse)
     assert len(plan.contexts) == 0
+
+
+def test_cache_validation_bypass_removed(engine):
+    """Verify semantic cache put requires validation unconditionally."""
+    from app.cache.semantic_cache import FastPathSemanticCache
+    import inspect
+    sig = inspect.signature(FastPathSemanticCache.put)
+    assert "validate" not in sig.parameters, "Cache validation bypass must not exist."
+
+def test_empty_string_siis_behavior(engine):
+    """Verify empty string SIIS produces empty response."""
+    plan = engine.extract_and_build("query", "")
+    assert len(plan.contexts) == 0
+
+def test_empty_title_content_dict_behavior(engine):
+    """Verify empty title/content dict SIIS produces empty response."""
+    plan = engine.extract_and_build("query", {"title": "", "content": ""})
+    assert len(plan.contexts) == 0

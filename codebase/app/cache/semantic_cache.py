@@ -364,20 +364,16 @@ class FastPathSemanticCache:
         response: ContextDeeplinkResponse,
         siis_response: Optional[Union[Dict[str, Any], str]] = None,
         scenario_id: Optional[str] = None,
-        validate: bool = True,
         intent_vector: Optional[np.ndarray] = None,
         rebuild_matrix: bool = True,
     ) -> bool:
         """Store a validated ContextDeeplinkResponse in the cache."""
-        # Enforce validation firewall before storing
-        if validate:
-            validated_resp, errors = self.firewall.validate_response(response, allow_repair=True)
-            if errors:
-                logger.error(f"Cannot cache invalid response: {errors}")
-                return False
-            final_response = validated_resp
-        else:
-            final_response = response
+        # Enforce unconditional validation firewall before storing
+        validated_resp, errors = self.firewall.validate_response(response, allow_repair=True)
+        if errors:
+            logger.error(f"Cannot cache invalid response: {errors}")
+            return False
+        final_response = validated_resp
 
         norm_query = normalize_query(query)
         fingerprint = compute_siis_fingerprint(siis_response)
