@@ -382,7 +382,7 @@ def test_engine_duplicate_ids(engine):
     with pytest.raises(ValueError, match="Duplicate observation ID"):
         engine.evaluate(NBERequest(
             hypotheses=[Hypothesis(id="h1", description="Desc", prior_probability=1.0)],
-            available_evidence=[],
+            available_evidence=[Evidence(id="e1", description="Desc", cost=1.0)],
             observations=[
                 EvidenceObservation(evidence_id="e1", is_true=True),
                 EvidenceObservation(evidence_id="e1", is_true=False)
@@ -549,3 +549,45 @@ def test_eig_small_positive_eig_selected(engine):
     resp = engine.evaluate(req)
     assert resp.selected_evidence is not None
     assert resp.selected_evidence.eig_score > engine.EIG_TOLERANCE
+
+def test_unknown_observation_id_rejected(engine):
+    req = NBERequest(
+        hypotheses=[
+            Hypothesis(id="h1", description="Problem A", prior_probability=1.0)
+        ],
+        available_evidence=[
+            Evidence(id="e1", description="Valid evidence", cost=1.0)
+        ],
+        observations=[
+            EvidenceObservation(evidence_id="e2", is_true=True)
+        ],
+        likelihoods=[],
+        sufficiency_threshold=0.9
+    )
+    with pytest.raises(ValueError, match="Observation references unknown evidence_id: e2"):
+        engine.evaluate(req)
+
+
+
+
+def test_eig_sub_tolerance_positive_eig_selected(engine):
+    req = NBERequest(
+        hypotheses=[
+            Hypothesis(id="h1", description="Problem A", prior_probability=0.5),
+            Hypothesis(id="h2", description="Problem B", prior_probability=0.5)
+        ],
+        available_evidence=[
+            Evidence(id="e1", description="Micro informative", cost=1.0)
+        ],
+        observations=[],
+        likelihoods=[
+            EvidenceLikelihood(evidence_id="e1", hypothesis_id="h1", probability_true=0.50001),
+            EvidenceLikelihood(evidence_id="e1", hypothesis_id="h2", probability_true=0.49999)
+        ],
+        sufficiency_threshold=0.9
+    )
+
+    resp = engine.evaluate(req)
+    assert resp.selected_evidence is not None
+    assert resp.selected_evidence.eig_score > 0.0
+    assert resp.selected_evidence.eig_score < 1e-9

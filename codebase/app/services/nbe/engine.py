@@ -65,6 +65,8 @@ class NBEEvaluationEngine:
 
         seen_observations = set()
         for o in request.observations:
+            if o.evidence_id not in seen_evidence:
+                raise ValueError(f"Observation references unknown evidence_id: {o.evidence_id}")
             if o.evidence_id in seen_observations:
                 raise ValueError(f"Duplicate observation ID: {o.evidence_id}")
             seen_observations.add(o.evidence_id)
@@ -79,13 +81,11 @@ class NBEEvaluationEngine:
 
         # Validate referential integrity for observations against available evidence if needed,
         # or we just validate likelihoods. The instruction says: "every likelihood evidence_id must refer to a declared available evidence item or explicitly declared observed-evidence item".
-        all_evidence_ids = seen_evidence | seen_observations
-
         likelihoods = {} # likelihoods[e_id][h_id] = P(E=True|H)
         for lh in request.likelihoods:
             if lh.hypothesis_id not in priors:
                 raise ValueError(f"Likelihood references unknown hypothesis_id: {lh.hypothesis_id}")
-            if lh.evidence_id not in all_evidence_ids:
+            if lh.evidence_id not in seen_evidence:
                 raise ValueError(f"Likelihood references unknown evidence_id: {lh.evidence_id}")
             if lh.evidence_id not in likelihoods:
                 likelihoods[lh.evidence_id] = {}
@@ -163,15 +163,22 @@ class NBEEvaluationEngine:
             # EIG(E) = H(H) - E_e[H(H | E=e)]
             eig = current_entropy - expected_conditional_entropy
 
+            # Zero out EIG if it's purely floating point negative noise.
+            # Genuinely positive EIG (even < 1e-9) must be preserved.
+            if eig < 0.0 and abs(eig) <= self.EIG_TOLERANCE:
+                eig = 0.0
+
+            is_informative = eig > 0.0
+
             # Utility = EIG / Cost
             cost = candidate.cost
             if cost == 0.0:
-                utility = float('inf') if eig > self.EIG_TOLERANCE else 0.0
+                utility = float('inf') if is_informative else 0.0
             else:
                 utility = eig / cost
 
-            # Only consider evidence if it gives positive info gain above numerical noise
-            if eig > self.EIG_TOLERANCE:
+            # Only consider evidence if it gives positive info gain
+            if is_informative:
                 if utility > max_utility:
                     max_utility = utility
                     best_candidate = SelectedEvidence(
