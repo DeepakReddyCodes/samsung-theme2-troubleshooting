@@ -231,8 +231,8 @@ def test_negative_firewall_hallucinated_deeplink(firewall):
     assert any("not in authoritative deeplinks catalog" in err for err in errors)
 
 
-def test_positive_firewall_auto_action_missing_deeplink(firewall):
-    """Positive test: category='auto' without actionableDeeplink passes firewall. Missing target is fine."""
+def test_negative_firewall_auto_action_missing_deeplink(firewall):
+    """Negative test: category='auto' without actionableDeeplink fails firewall."""
     goal = Goal(
         goal="Follow these steps to perform this Screen Damage Troubleshooting",
         title="Screen display damage",
@@ -245,14 +245,14 @@ def test_positive_firewall_auto_action_missing_deeplink(firewall):
                 stepGroups=[
                     StepGroup(
                         steps=["Navigate to Settings."],
-                        actionableDeeplink=None,  # Missing for auto! Allowed
+                        actionableDeeplink=None,  # Missing!
                     )
                 ],
             )
         ],
     )
     _, errors = firewall.validate_goal(goal, allow_repair=False)
-    assert not any("has no actionableDeeplink" in err for err in errors)
+    assert any("has no actionableDeeplink" in err for err in errors)
 
 
 def test_negative_firewall_score_out_of_bounds(firewall):

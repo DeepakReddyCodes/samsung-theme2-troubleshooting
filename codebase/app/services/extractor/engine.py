@@ -134,6 +134,10 @@ class ColdPathExtractionEngine:
             actionable_dl = resolution.actionable_deeplink
             val_dl = resolution.validation_deeplink
 
+            if actionable_dl is None:
+                logger.warning(f"Dropping action '{ext_act.action_name}' due to missing actionable deeplink.")
+                continue
+
             # Ensure compliant 5-7 word description starting with 'It will'
             desc_str = rewrite_action_description(ext_act.description, ext_act.action_name)
 
