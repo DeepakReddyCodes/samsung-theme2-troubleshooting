@@ -66,14 +66,14 @@ def valid_response():
                                     "Select Back up data to secure your personal files.",
                                 ],
                                 actionableDeeplink=Deeplink(
-                                    deeplink="bixby://masked/act/b3ed3ed663",
-                                    description="Enables data backup to Samsung Cloud via device Settings on the device.",
-                                    message="Enable Back up data (Samsung Cloud)",
+                                    deeplink="voiceassist://masked/act/b3ed3ed663",
+                                    description="Enables data backup to TechCorp Cloud via device Settings on the device.",
+                                    message="Enable Back up data (TechCorp Cloud)",
                                     originalType="onURL",
                                 ),
                                 validationDeeplink=ValidationDeepLink(
-                                    deeplink="bixby://masked/val/266037d0c5",
-                                    key="Back up data (Samsung Cloud)",
+                                    deeplink="voiceassist://masked/val/266037d0c5",
+                                    key="Back up data (TechCorp Cloud)",
                                 ),
                             )
                         ],
@@ -369,7 +369,7 @@ def test_same_query_with_different_siis_responses_does_not_cross_hit(cache, vali
                             StepGroup(
                                 steps=["Open Settings, tap Connections, then Wi-Fi."],
                                 actionableDeeplink=Deeplink(
-                                    deeplink="bixby://masked/act/c9ca763e0c",
+                                    deeplink="voiceassist://masked/act/c9ca763e0c",
                                     description="Opens Wi-Fi settings to connect to networks.",
                                 ),
                             )

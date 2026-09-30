@@ -127,7 +127,7 @@ def audit_deeplinks() -> Dict[str, Any]:
                     if sg.actionableDeeplink:
                         total_returned_deeplinks += 1
                         act_uri = sg.actionableDeeplink.deeplink
-                        if act_uri == "bixby://dummy_positive":
+                        if act_uri in ("voiceassist://dummy_positive", "bixby://dummy_positive"):
                             dummy_positive_count += 1
                         elif act_uri in catalog_uris:
                             valid_catalog_deeplinks += 1
@@ -145,7 +145,7 @@ def audit_deeplinks() -> Dict[str, Any]:
                     if sg.validationDeeplink:
                         total_returned_deeplinks += 1
                         val_uri = sg.validationDeeplink.deeplink
-                        if val_uri == "bixby://dummy_positive":
+                        if val_uri in ("voiceassist://dummy_positive", "bixby://dummy_positive"):
                             dummy_positive_count += 1
                         elif val_uri in validation_uris or val_uri in catalog_uris:
                             valid_catalog_deeplinks += 1

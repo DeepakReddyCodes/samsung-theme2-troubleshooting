@@ -31,19 +31,13 @@ from app.services.retriever.base import (
 
 logger = logging.getLogger(__name__)
 
-# Stopwords specific to smartphone UI navigation steps
+# Stopwords specific to smartphone UI navigation steps (preserving action verbs)
 UI_STOPWORDS = {
     "a", "an", "the", "and", "or", "to", "in", "on", "at", "for", "with", "from",
     "by", "of", "it", "this", "that", "these", "those", "is", "are", "was", "be",
-    "tap", "press", "click", "select", "choose", "navigate", "open", "go",
-    "device", "phone", "tablet", "samsung", "galaxy", "settings", "screen",
+    "tap", "press", "click", "select", "choose", "navigate", "go",
+    "device", "phone", "tablet", "samsung", "galaxy", "settings",
     "step", "steps", "please", "your", "my", "between", "then", "into", "onto",
-    "turn", "off", "double",
-}
-
-# Negative polarity terms favoring offURL / Disable actions
-NEGATIVE_POLARITY_TERMS = {
-    "disable", "turn off", "switch off", "deactivate", "stop", "remove", "hide", "mute",
 }
 
 DEFAULT_CONFIDENCE_THRESHOLD = 0.35
@@ -96,7 +90,6 @@ class LexicalDeeplinkMatcher(IDeeplinkMatcher):
 
         path = catalog_path or (Path(__file__).resolve().parent.parent.parent / "data" / "deeplinks.json")
         if not Path(path).exists():
-            # Try workspace root
             path = Path(__file__).resolve().parent.parent.parent.parent / "deeplinks.json"
 
         self.load_catalog(path)
@@ -116,7 +109,6 @@ class LexicalDeeplinkMatcher(IDeeplinkMatcher):
         self.id_to_entry = {}
 
         for item in raw_entries:
-            # DL-DUMMY is reserved exclusively for the fallback handler
             if item.get("id") == "DL-DUMMY":
                 continue
 
@@ -124,7 +116,6 @@ class LexicalDeeplinkMatcher(IDeeplinkMatcher):
             val_obj = item.get("validation") or {}
             val_key = val_obj.get("key", "")
 
-            # Pre-compute normalized tokens and phrases
             msg_tokens = set(normalize_tokens(item.get("message", "")))
             val_tokens = set(normalize_tokens(val_key))
             desc_tokens = set(normalize_tokens(item.get("description", "")))
@@ -163,12 +154,11 @@ class LexicalDeeplinkMatcher(IDeeplinkMatcher):
         intent_tokens: Set[str],
         intent_phrases: Set[str],
         intent_raw: str,
-        is_negative_intent: bool,
     ) -> Tuple[float, List[str]]:
         """Compute structured relevance score for a catalog entry."""
         matched_fields = []
 
-        # 1. Tokens
+        # 1. Token overlap
         primary_tokens = entry["msg_tokens"] | entry["val_tokens"]
         all_entry_tokens = primary_tokens | entry["desc_tokens"]
         overlap = intent_tokens & all_entry_tokens
@@ -187,45 +177,56 @@ class LexicalDeeplinkMatcher(IDeeplinkMatcher):
         if overlap & entry["desc_tokens"]:
             matched_fields.append("description_tokens")
 
-        # 2. Multi-word exact phrase matches (must be >= 2 words)
+        # 2. Multi-word exact phrase matches
         phrase_boost = 0.0
-        norm_raw = intent_raw.lower()
+        norm_raw = normalize_text(intent_raw)
 
-        val_words = entry["val_tokens"]
-        if len(val_words) >= 2 and entry["norm_val_key"] in norm_raw:
-            phrase_boost += 0.40
+        val_key_norm = normalize_text(entry["norm_val_key"])
+        if len(entry["val_tokens"]) >= 2 and val_key_norm and val_key_norm in norm_raw:
+            phrase_boost += 0.35
+            matched_fields.append("val_key_exact_phrase")
+        elif len(entry["val_tokens"]) == 1 and val_key_norm and val_key_norm == norm_raw.strip():
+            phrase_boost += 0.45
             matched_fields.append("val_key_exact_phrase")
         elif entry["val_phrases"] and (entry["val_phrases"] & intent_phrases):
             phrase_boost += 0.25
             matched_fields.append("val_key_phrase")
 
-        msg_words = entry["msg_tokens"]
-        if len(msg_words) >= 2 and entry["norm_message"] in norm_raw:
+        msg_norm = normalize_text(entry["norm_message"])
+        if len(entry["msg_tokens"]) >= 2 and msg_norm in norm_raw:
             phrase_boost += 0.35
             matched_fields.append("message_exact_phrase")
         elif entry["msg_phrases"] and (entry["msg_phrases"] & intent_phrases):
             phrase_boost += 0.20
             matched_fields.append("message_phrase")
 
-        # 3. Polarity alignment (Enable vs Disable)
+        # 3. Action polarity alignment
         polarity_bonus = 0.0
         orig_type = entry.get("originalType") or ""
         msg_lower = entry["message"].lower()
 
-        if is_negative_intent:
-            if orig_type == "offURL" or msg_lower.startswith("disable"):
-                polarity_bonus += 0.15
-                matched_fields.append("polarity_negative_match")
-            elif orig_type == "onURL" or msg_lower.startswith("enable"):
-                polarity_bonus -= 0.20
-        else:
-            if orig_type in {"onURL", "onClickURL"} or msg_lower.startswith("enable") or msg_lower.startswith("view"):
-                polarity_bonus += 0.10
-                matched_fields.append("polarity_positive_match")
-            elif orig_type == "offURL" or msg_lower.startswith("disable"):
-                polarity_bonus -= 0.15
+        is_enable = bool(re.search(r"\b(enable|turn on|activate|start|switch on|back up|backup|save|secure|lock)\b", norm_raw))
+        is_disable = bool(re.search(r"\b(disable|turn off|deactivate|stop|switch off|delete|wipe|shut off|unlock)\b", norm_raw))
+        is_view = bool(re.search(r"\b(view|open|navigate|go to|check|settings)\b", norm_raw)) and not is_enable and not is_disable
 
-        confidence = max(0.0, min(1.0, (f1 * 0.6) + phrase_boost + polarity_bonus))
+        if is_enable:
+            if orig_type == "onURL" or msg_lower.startswith("enable"):
+                polarity_bonus += 0.45
+                matched_fields.append("polarity_enable_match")
+            elif orig_type == "offURL" or msg_lower.startswith("disable"):
+                polarity_bonus -= 0.50
+        elif is_disable:
+            if orig_type == "offURL" or msg_lower.startswith("disable"):
+                polarity_bonus += 0.45
+                matched_fields.append("polarity_disable_match")
+            elif orig_type == "onURL" or msg_lower.startswith("enable"):
+                polarity_bonus -= 0.50
+        elif is_view:
+            if orig_type in {"onClickURL"} or msg_lower.startswith("view"):
+                polarity_bonus += 0.25
+                matched_fields.append("polarity_view_match")
+
+        confidence = max(0.0, min(1.0, (f1 * 0.5) + phrase_boost + polarity_bonus))
         return confidence, matched_fields
 
     def match(self, intent: TroubleshootingIntent) -> DeeplinkResolutionResult:
@@ -233,9 +234,6 @@ class LexicalDeeplinkMatcher(IDeeplinkMatcher):
         intent_raw = intent.full_text()
         intent_tokens = set(normalize_tokens(intent_raw))
         intent_phrases = extract_phrases(intent_raw, 2)
-
-        # Check polarity
-        is_negative = any(term in intent_raw.lower() for term in NEGATIVE_POLARITY_TERMS)
 
         best_entry = None
         best_confidence = 0.0
@@ -247,59 +245,60 @@ class LexicalDeeplinkMatcher(IDeeplinkMatcher):
                 intent_tokens=intent_tokens,
                 intent_phrases=intent_phrases,
                 intent_raw=intent_raw,
-                is_negative_intent=is_negative,
             )
+
             if confidence > best_confidence:
                 best_confidence = confidence
                 best_entry = entry
                 best_fields = fields
 
-        # If confidence passes threshold, select catalog entry verbatim
+        # Check against confidence threshold
         if best_entry and best_confidence >= self.confidence_threshold:
-            raw = best_entry["raw"]
+            raw_item = best_entry["raw"]
 
-            # Verbatim actionable deeplink copy
+            # Actionable deeplink
             actionable_dl = Deeplink(
-                deeplink=raw["deeplink"],  # VERBATIM COPY
-                description=sanitize_text(raw.get("description", "")),
-                message=sanitize_text(raw.get("message", "")),
-                originalType=raw.get("originalType"),
-                classes=raw.get("classes"),
+                deeplink=raw_item["deeplink"],
+                description=raw_item.get("description", ""),
+                message=raw_item.get("message", ""),
+                originalType=raw_item.get("originalType"),
+                control_type=raw_item.get("control_type"),
             )
 
-            # Verbatim validation deeplink copy
-            validation_dl = None
-            if raw.get("validation"):
-                val_raw = raw["validation"]
-                res_type = None
-                if val_raw.get("resultType") in ResultTypes.__members__.values():
-                    res_type = ResultTypes(val_raw["resultType"])
-
-                cond = None
-                if val_raw.get("condition") in Condition.__members__.values():
-                    cond = Condition(val_raw["condition"])
-
-                validation_dl = ValidationDeepLink(
-                    deeplink=val_raw["deeplink"],  # VERBATIM COPY
-                    key=sanitize_text(val_raw.get("key", "")),
-                    resultType=res_type,
-                    condition=cond,
-                    value=val_raw.get("value"),
+            # Validation deeplink
+            val_dl = None
+            if raw_item.get("validation"):
+                val_data = raw_item["validation"]
+                val_dl = ValidationDeepLink(
+                    deeplink=val_data["deeplink"],
+                    key=val_data["key"],
+                    resultType=val_data.get("resultType"),
+                    condition=val_data.get("condition"),
+                    value=val_data.get("value"),
                 )
 
             return DeeplinkResolutionResult(
                 actionable_deeplink=actionable_dl,
-                validation_deeplink=validation_dl,
-                matched_entry_id=raw["id"],
+                validation_deeplink=val_dl,
+                matched_entry_id=best_entry["id"],
                 matched_fields=best_fields,
                 confidence_score=round(best_confidence, 4),
                 is_fallback=False,
-                debug_explanation=(
-                    f"Matched catalog entry {raw['id']} ('{raw.get('message')}') "
-                    f"with confidence {best_confidence:.3f} on fields: {', '.join(best_fields)}"
-                ),
+                debug_explanation=f"Matched {best_entry['id']} with confidence {best_confidence:.3f}",
             )
 
-        # Fallback if below confidence threshold
-        logger.debug(f"Confidence {best_confidence:.3f} below threshold {self.confidence_threshold}. Triggering fallback.")
-        return create_grounded_dummy_positive(intent)
+        # Fallback: Check if intent has a grounded concrete Settings screen target
+        fallback_res = create_grounded_dummy_positive(intent)
+        if fallback_res:
+            return fallback_res
+
+        # No catalog match and no concrete Settings target
+        return DeeplinkResolutionResult(
+            actionable_deeplink=None,
+            validation_deeplink=None,
+            matched_entry_id="NONE",
+            matched_fields=[],
+            confidence_score=round(best_confidence, 4),
+            is_fallback=False,
+            debug_explanation="No catalog match and no grounded concrete Settings target.",
+        )

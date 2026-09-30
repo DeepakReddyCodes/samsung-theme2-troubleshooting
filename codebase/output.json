@@ -1,0 +1,1096 @@
+[
+  {
+    "query": "1. My TechCorp A15G tablet screen flashes and then goes completely blank whenever I tap to open an email in Gmail, and after it works for a short time it goes blank again.",
+    "query_variations": [
+      "How do I fix my Samsung tablet screen going completely blank whenever I open Gmail?",
+      "Gmail causes tablet screen to flash and turn black repeatedly.",
+      "Whenever I tap to check my emails on my tablet, the display blinks and goes dark after a few seconds.",
+      "Opening Gmail on my Samsung A115G makes the screen flash and turn pitch black.",
+      "Need troubleshooting steps for email app crashing and blanking out my tablet screen.",
+      "Display flashes and cuts out to a blank screen when loading mail server on my tablet.",
+      "Why does my tablet screen turn completely dark whenever I launch the email application?",
+      "My Samsung tablet display shuts off shortly after opening Gmail messages.",
+      "Tablet screen keeps flashing black when trying to sync or read email.",
+      "Email app display failure on Samsung A115G tablet causing black screen."
+    ],
+    "response": {
+      "contexts": [
+        {
+          "goal": "Follow these steps to perform this Email Connection Troubleshooting",
+          "title": "Email server connection",
+          "actions": [
+            {
+              "actionName": "Check Wifi Network Settings",
+              "description": "It will check your wifi connection status",
+              "stepGroups": [
+                {
+                  "steps": [
+                    "Navigate to and open Settings.",
+                    "Tap on Connections, then tap Wi-Fi.",
+                    "Verify active Wi-Fi connection status to access email servers."
+                  ],
+                  "validationDeeplink": {
+                    "deeplink": "voiceassist://masked/val/26333a38b6",
+                    "key": "Wi-Fi network notifications",
+                    "resultType": null,
+                    "condition": null,
+                    "value": null
+                  },
+                  "actionableDeeplink": {
+                    "deeplink": "voiceassist://masked/act/c9ca763e0c",
+                    "description": "Opens the Wi-Fi network notifications settings page in device Settings on the device.",
+                    "message": "View Notification Settings",
+                    "classes": null,
+                    "originalType": "onClickURL"
+                  }
+                }
+              ],
+              "category": "auto"
+            }
+          ],
+          "score": 0.95
+        }
+      ]
+    },
+    "meta": {
+      "latency_ms": 1.2,
+      "cache_hit": true,
+      "model": "gemini-2.5-flash",
+      "cost_usd": 0.0
+    }
+  },
+  {
+    "query": "My Nexa X1 screen turns completely blank or white and no text appears when I search for a stock price or use the Quick Assist app, and it happens with other apps too.",
+    "query_variations": [
+      "Why does my Galaxy S22 screen turn completely blank or white when searching stock prices or using apps?",
+      "Galaxy S22 screen goes totally white or black with no text showing in apps.",
+      "Every time I open Smart Tutor or check stock prices, my S22 display turns blank white.",
+      "Phone screen goes completely white and stops showing text across multiple applications.",
+      "How to resolve blank white screen issue on Galaxy S22 during app usage?",
+      "Display turns entirely white or blank without showing any text when opening apps on Galaxy S22.",
+      "My S22 display goes blank and unresponsive whenever I try using Smart Tutor or other apps.",
+      "Screen suddenly turns plain white with no text appearing on my Galaxy phone.",
+      "Apps on my Galaxy S22 cause the entire screen to turn blank and blank out text.",
+      "Troubleshoot Galaxy S22 blank white screen bug affecting Smart Tutor and stock search."
+    ],
+    "response": {
+      "contexts": [
+        {
+          "goal": "Follow these steps to perform this Screen Display Troubleshooting",
+          "title": "Blank display issue",
+          "actions": [
+            {
+              "actionName": "Inspect Device Physical Hardware",
+              "description": "It will verify liquid damage indicator status",
+              "stepGroups": [
+                {
+                  "steps": [
+                    "Remove external cases or accessories from phone.",
+                    "Eject SIM tray with ejector tool and shine flashlight inside.",
+                    "Check Liquid Damage Indicator for solid white color."
+                  ],
+                  "validationDeeplink": null,
+                  "actionableDeeplink": null
+                }
+              ],
+              "category": "manual"
+            }
+          ],
+          "score": 0.95
+        }
+      ]
+    },
+    "meta": {
+      "latency_ms": 1.2,
+      "cache_hit": true,
+      "model": "gemini-2.5-flash",
+      "cost_usd": 0.0
+    }
+  },
+  {
+    "query": "My Nexa Fold X1 screen went completely black, so I can't see or interact with the phone, and I'm unable to use Data Transfer or any other method to transfer my data.",
+    "query_variations": [
+      "How can I transfer my data from a Galaxy Z Flip 7 when the screen is completely black and unresponsive?",
+      "Z Flip 7 screen went pitch black and I cannot access Smart Switch to back up my files.",
+      "My Galaxy Flip 7 display is completely black; how do I recover or transfer my data without touch?",
+      "Unable to see anything on my Z Flip 7 screen to transfer data with Smart Switch.",
+      "Steps to back up data from a black unresponsive screen on Galaxy Z Flip 7.",
+      "Galaxy Z Flip 7 screen is completely dead and won't display anything for Smart Switch transfer.",
+      "Can I extract files from my Z Flip 7 if the screen went totally dark and won't respond?",
+      "Screen blacked out on Galaxy Z Flip 7 preventing data migration and Smart Switch.",
+      "Need a way to interact with my Flip 7 and transfer data after screen went totally black.",
+      "Galaxy Z Flip 7 display failure data backup and Smart Switch recovery method."
+    ],
+    "response": {
+      "contexts": [
+        {
+          "goal": "Follow these steps to perform this Display Recovery Troubleshooting",
+          "title": "Screen recovery troubleshooting",
+          "actions": [
+            {
+              "actionName": "Connect External Mouse Display",
+              "description": "It will enable external device screen navigation",
+              "stepGroups": [
+                {
+                  "steps": [
+                    "Connect a USB mouse and keyboard using an adapter.",
+                    "Navigate the device display screen using the connected mouse."
+                  ],
+                  "validationDeeplink": null,
+                  "actionableDeeplink": null
+                }
+              ],
+              "category": "manual"
+            }
+          ],
+          "score": 0.95
+        }
+      ]
+    },
+    "meta": {
+      "latency_ms": 1.2,
+      "cache_hit": true,
+      "model": "gemini-2.5-flash",
+      "cost_usd": 0.0
+    }
+  },
+  {
+    "query": "My TechCorp Nexa A14/A15 screen suddenly went completely black on its own after about a month of use. It doesn't display anything, even when I try to turn it on.",
+    "query_variations": [
+      "My Galaxy A15 screen suddenly turned completely black on its own and won't turn on.",
+      "How to fix Samsung Galaxy A15/A16 black screen of death after normal use?",
+      "After about a month of use, my Galaxy A16 display went completely dark and won't power up.",
+      "Galaxy A15 display is totally black and shows nothing even when holding power button.",
+      "Troubleshoot sudden black screen on Samsung Galaxy A15 that doesn't display anything.",
+      "Why did my brand new Galaxy A16 screen suddenly go black and stop displaying?",
+      "My Galaxy A15 won't show any image on the display even though I try turning it on.",
+      "Phone screen went totally blank on its own and doesn't respond to power on attempts.",
+      "Samsung A16 screen turned pitch black out of nowhere and shows zero display.",
+      "Force restart or fix Galaxy A15 when screen goes completely black on its own."
+    ],
+    "response": {
+      "contexts": [
+        {
+          "goal": "Follow these steps to perform this Black Display Troubleshooting",
+          "title": "Black screen resolution",
+          "actions": [
+            {
+              "actionName": "Force Device System Restart",
+              "description": "It will force restart your unresponsive device",
+              "stepGroups": [
+                {
+                  "steps": [
+                    "Press and hold Power button and Volume down button simultaneously.",
+                    "Hold buttons for at least twenty seconds until device vibrates."
+                  ],
+                  "validationDeeplink": null,
+                  "actionableDeeplink": null
+                }
+              ],
+              "category": "critical"
+            }
+          ],
+          "score": 0.95
+        }
+      ]
+    },
+    "meta": {
+      "latency_ms": 1.2,
+      "cache_hit": true,
+      "model": "gemini-2.5-flash",
+      "cost_usd": 0.0
+    }
+  },
+  {
+    "query": "My tablet screen stays completely blank when I try to use Data Transfer to scan the QR code for transferring data from my Nexa X1 phone, so the transfer can't proceed.",
+    "query_variations": [
+      "Why is my Galaxy tablet screen staying blank when scanning the Smart Switch QR code from my S25?",
+      "Galaxy tablet display goes completely blank during Smart Switch QR code data transfer.",
+      "Smart Switch QR transfer fails because tablet screen stays dark when trying to scan from phone.",
+      "How do I transfer data from S25 to tablet when the QR scan screen stays blank?",
+      "Tablet screen remains completely blank while attempting Smart Switch QR code migration.",
+      "Can't proceed with Smart Switch transfer because the tablet display won't show anything during QR scan.",
+      "My Samsung tablet stays on a blank screen instead of scanning Smart Switch transfer QR code.",
+      "Smart Switch QR code transfer stuck on blank screen on Galaxy tablet.",
+      "Fix blank screen problem on Galaxy tablet when using Smart Switch with Galaxy S25.",
+      "Unable to transfer data between S25 and tablet because tablet camera/QR screen is blank."
+    ],
+    "response": {
+      "contexts": [
+        {
+          "goal": "Follow these steps to perform this Secure Folder Troubleshooting",
+          "title": "Secure folder transfer",
+          "actions": [
+            {
+              "actionName": "Open Data Transfer Settings",
+              "description": "It will open data transfer settings page",
+              "stepGroups": [
+                {
+                  "steps": [
+                    "Navigate to and open Settings.",
+                    "Tap on Accounts and backup.",
+                    "Select Data Transfer to initiate data transfer."
+                  ],
+                  "validationDeeplink": {
+                    "deeplink": "voiceassist://masked/val/266037d0c5",
+                    "key": "Back up data (TechCorp Cloud)",
+                    "resultType": "boolean",
+                    "condition": "equal",
+                    "value": "True"
+                  },
+                  "actionableDeeplink": {
+                    "deeplink": "voiceassist://masked/act/b3ed3ed663",
+                    "description": "Enables data backup to TechCorp Cloud via device Settings on the device.",
+                    "message": "Enable Back up data (TechCorp Cloud)",
+                    "classes": null,
+                    "originalType": "onURL"
+                  }
+                }
+              ],
+              "category": "auto"
+            }
+          ],
+          "score": 0.95
+        }
+      ]
+    },
+    "meta": {
+      "latency_ms": 1.2,
+      "cache_hit": true,
+      "model": "gemini-2.5-flash",
+      "cost_usd": 0.0
+    }
+  },
+  {
+    "query": "My tablet's screen stays dark and only three app icons are lit while the rest are dark and won't open, so nothing loads on the screen and I can't use the device.",
+    "query_variations": [
+      "My tablet screen is dark with only three app icons lit up and nothing else will open.",
+      "Why are only 3 app icons showing on my dark tablet screen while other apps won't load?",
+      "Tablet display stays dark and only shows three lit icons; device is unusable.",
+      "How to exit multi window or restore full display when only three icons appear on dark screen?",
+      "Only three icons are illuminated on my tablet screen and nothing opens when tapped.",
+      "Screen locked in dark view with just 3 app shortcuts visible on Samsung tablet.",
+      "My Galaxy tablet display is dark except for three app icons and I can't launch anything.",
+      "Fix tablet screen showing only 3 lit icons and failing to load regular home screen.",
+      "Samsung tablet interface unresponsive with darkened screen and three active icons.",
+      "Display stuck showing three bright apps on a dark background on Galaxy tablet."
+    ],
+    "response": {
+      "contexts": [
+        {
+          "goal": "Follow these steps to perform this Multi Window Troubleshooting",
+          "title": "Multi window settings",
+          "actions": [
+            {
+              "actionName": "Configure Advanced Features Window",
+              "description": "It will configure multi window display options",
+              "stepGroups": [
+                {
+                  "steps": [
+                    "Navigate to and open Settings.",
+                    "Tap on Advanced features, then Multi window.",
+                    "Toggle on swipe for split screen or pop-up view."
+                  ],
+                  "validationDeeplink": {
+                    "deeplink": "voiceassist://masked/val/b1df5728e1",
+                    "key": "Swipe for split screen",
+                    "resultType": null,
+                    "condition": null,
+                    "value": null
+                  },
+                  "actionableDeeplink": {
+                    "deeplink": "voiceassist://masked/act/1fa6fc9ead",
+                    "description": "Disables swipe for split screen via device Settings on the device.",
+                    "message": "Disable Swipe for split screen",
+                    "classes": null,
+                    "originalType": "offURL"
+                  }
+                }
+              ],
+              "category": "auto"
+            }
+          ],
+          "score": 0.95
+        }
+      ]
+    },
+    "meta": {
+      "latency_ms": 1.2,
+      "cache_hit": true,
+      "model": "gemini-2.5-flash",
+      "cost_usd": 0.0
+    }
+  },
+  {
+    "query": "My new smartphone's main screen stays small and doesn't fill the whole display; I can't make it expand to full size and I've never seen this before.",
+    "query_variations": [
+      "Why is my Samsung phone screen staying small and not filling the display when mirroring?",
+      "How can I make my mirrored phone display expand to full screen on my Samsung TV?",
+      "Phone screen remains small with large black borders during Smart View screen mirroring.",
+      "My Galaxy phone display won't expand to full screen size while casting to television.",
+      "Smart View screen mirroring aspect ratio issue making phone screen appear tiny on display.",
+      "Why doesn't my Samsung screen mirror fill the entire monitor or TV screen?",
+      "Fix small screen size during Smart View mirroring on new Samsung phone.",
+      "Mirrored display stays miniaturized and doesn't expand to fill the full screen.",
+      "How to change aspect ratio in Smart View so phone screen fills the TV completely?",
+      "Phone display looks tiny and won't go full screen when mirroring to Samsung Smart TV."
+    ],
+    "response": {
+      "contexts": [
+        {
+          "goal": "Follow these steps to perform this Screen Mirroring Troubleshooting",
+          "title": "Smart view mirroring",
+          "actions": [
+            {
+              "actionName": "Configure Smart View Settings",
+              "description": "It will open smart view display settings",
+              "stepGroups": [
+                {
+                  "steps": [
+                    "Swipe down to open the Quick settings panel.",
+                    "Tap on Smart View icon to search for TV.",
+                    "Select your TV and adjust aspect ratio to full screen."
+                  ],
+                  "validationDeeplink": {
+                    "deeplink": "voiceassist://masked/val/b4a22bbbe1",
+                    "key": "Swipe down for notification panel",
+                    "resultType": null,
+                    "condition": null,
+                    "value": null
+                  },
+                  "actionableDeeplink": {
+                    "deeplink": "voiceassist://masked/act/8c4149a939",
+                    "description": "Opens the swipe down for notification panel settings page in device Settings on the device.",
+                    "message": "View Notification Settings",
+                    "classes": null,
+                    "originalType": "onClickURL"
+                  }
+                }
+              ],
+              "category": "auto"
+            }
+          ],
+          "score": 0.95
+        }
+      ]
+    },
+    "meta": {
+      "latency_ms": 1.2,
+      "cache_hit": true,
+      "model": "gemini-2.5-flash",
+      "cost_usd": 0.0
+    }
+  },
+  {
+    "query": "My Nexa Fold X1 inner screen stopped working by itself; it shows no image and doesn't respond to touch, while the outer cover screen still works.",
+    "query_variations": [
+      "Galaxy Flip 7 inner screen stopped working and shows no image while outer screen still works.",
+      "How to access data on Galaxy Flip 7 when main inner display is dead but cover screen works?",
+      "Inner folding display is unresponsive and blank on Flip 7 though cover screen responds fine.",
+      "Inside screen on my Galaxy Flip 7 died completely; can I still navigate and save files?",
+      "Troubleshoot Galaxy Flip 7 inner display failure with functional outer cover screen.",
+      "Inner screen has no image and ignores touch on Galaxy Flip 7 while external screen is fine.",
+      "How to back up my Flip 7 phone when the main inner screen fails to display anything?",
+      "Flip 7 inner folding screen won't respond to touch or turn on, but outer screen functions.",
+      "Navigate and recover phone when inside display is blank on Galaxy Z Flip 7.",
+      "Connect mouse or monitor to Galaxy Flip 7 after inner screen stops working."
+    ],
+    "response": {
+      "contexts": [
+        {
+          "goal": "Follow these steps to perform this Unresponsive Screen Troubleshooting",
+          "title": "Data access resolution",
+          "actions": [
+            {
+              "actionName": "Connect Mouse For Navigation",
+              "description": "It will allow navigating without touch responsiveness",
+              "stepGroups": [
+                {
+                  "steps": [
+                    "Connect a USB mouse to the phone using an OTG adapter.",
+                    "Use mouse cursor on display to enter unlock code."
+                  ],
+                  "validationDeeplink": null,
+                  "actionableDeeplink": null
+                }
+              ],
+              "category": "manual"
+            }
+          ],
+          "score": 0.95
+        }
+      ]
+    },
+    "meta": {
+      "latency_ms": 1.2,
+      "cache_hit": true,
+      "model": "gemini-2.5-flash",
+      "cost_usd": 0.0
+    }
+  },
+  {
+    "query": "My TechCorp Nexa Fold X1 screen flickers and goes blank whenever I open it, so I can't see anything or access the settings, which stops me from using the phone.",
+    "query_variations": [
+      "Why does my Galaxy Z Flip 6 screen flicker and turn blank every time I open it?",
+      "Galaxy Z Flip 6 display flickers and blackens upon opening the fold.",
+      "Whenever I unfold my Flip 6, the screen flickers violently and goes completely dark.",
+      "Can't access settings or use phone because Flip 6 screen flickers and blanks when opened.",
+      "How to resolve screen flickering and black screen when opening Samsung Galaxy Z Flip 6?",
+      "Display flickers and cuts out to blank screen as soon as I open my Z Flip 6.",
+      "My Galaxy Flip 6 screen blinks rapidly and shuts off whenever the hinge is unfolded.",
+      "Screen flickering issue on Galaxy Z Flip 6 camera and folding hinge.",
+      "Z Flip 6 display goes dark with flickering lines upon opening device.",
+      "Fix screen flicker and black display bug on Galaxy Z Flip 6."
+    ],
+    "response": {
+      "contexts": [
+        {
+          "goal": "Follow these steps to perform this Camera Flicker Troubleshooting",
+          "title": "Camera display flicker",
+          "actions": [
+            {
+              "actionName": "Adjust Camera Display Settings",
+              "description": "It will adjust camera app display settings",
+              "stepGroups": [
+                {
+                  "steps": [
+                    "Open the Camera application on your device.",
+                    "Tap Settings gear icon in the top corner.",
+                    "Turn off auto HDR or adjust scene optimizer settings."
+                  ],
+                  "validationDeeplink": {
+                    "deeplink": "voiceassist://masked/val/83443a9319",
+                    "key": "Double tap to turn off screen",
+                    "resultType": null,
+                    "condition": null,
+                    "value": null
+                  },
+                  "actionableDeeplink": {
+                    "deeplink": "voiceassist://masked/act/19a4986b12",
+                    "description": "Disables double tap to turn off screen via device Settings on the device.",
+                    "message": "Disable Double tap to turn off screen",
+                    "classes": null,
+                    "originalType": "offURL"
+                  }
+                }
+              ],
+              "category": "auto"
+            }
+          ],
+          "score": 0.95
+        }
+      ]
+    },
+    "meta": {
+      "latency_ms": 1.2,
+      "cache_hit": true,
+      "model": "gemini-2.5-flash",
+      "cost_usd": 0.0
+    }
+  },
+  {
+    "query": "My Nexa Fold X1 screen is half black—one side of the display is completely dark while the other side works fine, so I can't access the device normally.",
+    "query_variations": [
+      "My Galaxy Flip 6 screen is half black with one side completely dark and the other working.",
+      "How do I fix half of my Galaxy Flip 6 display being pitch black?",
+      "One half of my Z Flip 6 screen is totally dark while the opposite side displays normally.",
+      "Split blackout on Galaxy Flip 6 screen where one side works and one side is dead.",
+      "Half of the folding screen on my Galaxy Flip 6 went dark; can I still navigate device?",
+      "Galaxy Flip 6 display panel failure with half the screen blacked out.",
+      "Why is one half of my Galaxy Z Flip 6 screen black and unresponsive?",
+      "Right or left half of Flip 6 screen is black while remainder of display functions.",
+      "Troubleshooting partial screen blackout on Samsung Galaxy Flip 6.",
+      "Galaxy Flip 6 screen divided in half with one dark side; repair or data access steps."
+    ],
+    "response": {
+      "contexts": [
+        {
+          "goal": "Follow these steps to perform this Display Split Troubleshooting",
+          "title": "Partial screen blackout",
+          "actions": [
+            {
+              "actionName": "Schedule Authorized Repair Service",
+              "description": "It will schedule hardware screen inspection appointment",
+              "stepGroups": [
+                {
+                  "steps": [
+                    "Contact Customer Support or visit an authorized service center.",
+                    "Provide device inspection details regarding display panel blackout."
+                  ],
+                  "validationDeeplink": null,
+                  "actionableDeeplink": null
+                }
+              ],
+              "category": "manual"
+            }
+          ],
+          "score": 0.95
+        }
+      ]
+    },
+    "meta": {
+      "latency_ms": 1.2,
+      "cache_hit": true,
+      "model": "gemini-2.5-flash",
+      "cost_usd": 0.0
+    }
+  },
+  {
+    "query": "My Nexa X1 has a floating circle that constantly hovers on my screen and gives me quick shortcuts to recent apps, home, back, screen off, volume control, and more; I want to remove it.",
+    "query_variations": [
+      "How do I remove the floating shortcut circle that hovers on my Galaxy S25 screen?",
+      "Turn off the hovering assistant menu button with shortcuts on Galaxy S25.",
+      "There is a floating circle on my S25 screen with home and recent app shortcuts; how to disable it?",
+      "How to get rid of the accessibility assistant menu circle on Samsung Galaxy S25?",
+      "Steps to remove the floating shortcut icon that stays on top of my Galaxy phone screen.",
+      "Galaxy S25 has an annoying circle floating on the display with quick tools; where is the setting?",
+      "Disable floating assistant button for volume, back, and recent apps on Galaxy S25.",
+      "Why is there a round shortcut widget hovering on my screen and how do I delete it?",
+      "Remove floating accessibility circle widget from Galaxy S25 display.",
+      "Turn off Assistant Menu in Accessibility settings to get rid of floating screen shortcut."
+    ],
+    "response": {
+      "contexts": [
+        {
+          "goal": "Follow these steps to perform this Floating Shortcut Troubleshooting",
+          "title": "Assistant menu settings",
+          "actions": [
+            {
+              "actionName": "Configure Accessibility Assistant Menu",
+              "description": "It will configure your accessibility shortcut settings",
+              "stepGroups": [
+                {
+                  "steps": [
+                    "Navigate to and open Settings.",
+                    "Tap on Accessibility, then Interaction and dexterity.",
+                    "Toggle off Assistant menu to remove floating shortcut circle."
+                  ],
+                  "validationDeeplink": null,
+                  "actionableDeeplink": {
+                    "deeplink": "voiceassist://dummy_positive",
+                    "description": "It will open your Accessibility settings",
+                    "message": "Open Accessibility Settings",
+                    "classes": null,
+                    "originalType": "placeholder"
+                  }
+                }
+              ],
+              "category": "auto"
+            }
+          ],
+          "score": 0.95
+        }
+      ]
+    },
+    "meta": {
+      "latency_ms": 1.2,
+      "cache_hit": true,
+      "model": "gemini-2.5-flash",
+      "cost_usd": 0.0
+    }
+  },
+  {
+    "query": "My Nexa X1 screen stays blank and doesn't show any activation message or anything else when I turn it on after the carrier deactivated the old phone.",
+    "query_variations": [
+      "Galaxy S22 screen stays blank and shows no activation message after old phone was deactivated.",
+      "Why is my Galaxy S22 display blank without any activation prompt after switching phones?",
+      "Screen stays dark and won't display carrier activation screen on Samsung Galaxy S22.",
+      "Switched carriers but Galaxy S22 screen is blank and shows nothing when turned on.",
+      "How to activate Galaxy S22 when screen remains blank and shows no welcome or setup message?",
+      "Galaxy S22 powers on to a completely blank screen after carrier line transfer.",
+      "Carrier deactivated old device but new S22 display is blank with no network prompt.",
+      "Fix blank display and missing carrier activation screen on Galaxy S22.",
+      "Display shows nothing on Galaxy S22 after carrier activation process.",
+      "Troubleshoot Galaxy S22 screen staying blank during carrier phone activation."
+    ],
+    "response": {
+      "contexts": [
+        {
+          "goal": "Follow these steps to perform this Blank Display Troubleshooting",
+          "title": "Blank display issue",
+          "actions": [
+            {
+              "actionName": "Force Device System Restart",
+              "description": "It will force restart your unresponsive device",
+              "stepGroups": [
+                {
+                  "steps": [
+                    "Press and hold Power button and Volume down button simultaneously.",
+                    "Hold buttons for at least twenty seconds until device vibrates."
+                  ],
+                  "validationDeeplink": null,
+                  "actionableDeeplink": null
+                }
+              ],
+              "category": "critical"
+            }
+          ],
+          "score": 0.95
+        }
+      ]
+    },
+    "meta": {
+      "latency_ms": 1.2,
+      "cache_hit": true,
+      "model": "gemini-2.5-flash",
+      "cost_usd": 0.0
+    }
+  },
+  {
+    "query": "My smartphone's screen is completely cracked, it's a total crack and I can't use the device.",
+    "query_variations": [
+      "My Galaxy phone screen is completely cracked and shattered; how do I back up data and get repair?",
+      "Screen is totally cracked on my Galaxy phone and display is unusable.",
+      "How to handle a completely cracked Galaxy screen with bleeding display?",
+      "My Samsung phone display has shattered glass and won't respond to touch; what should I do?",
+      "Steps to take when Galaxy phone screen is totally cracked and unusable.",
+      "Galaxy screen is badly cracked and bleeding ink; how can I save my files before service?",
+      "Entire phone display is shattered; where can I get Samsung screen replacement?",
+      "Can I back up my phone when the Galaxy screen is cracked all over?",
+      "Cracked and shattered Galaxy screen troubleshooting and authorized repair guide.",
+      "Phone screen is broken and cracked across entire surface; schedule Samsung repair."
+    ],
+    "response": {
+      "contexts": [
+        {
+          "goal": "Follow these steps to perform this Screen Damage Troubleshooting",
+          "title": "Screen display damage",
+          "actions": [
+            {
+              "actionName": "Back Up Phone Data",
+              "description": "It will facilitate secure personal data transfer",
+              "stepGroups": [
+                {
+                  "steps": [
+                    "Navigate to and open Settings.",
+                    "Tap on Accounts and backup.",
+                    "Select Back up data to secure your personal files."
+                  ],
+                  "validationDeeplink": {
+                    "deeplink": "voiceassist://masked/val/266037d0c5",
+                    "key": "Back up data (TechCorp Cloud)",
+                    "resultType": "boolean",
+                    "condition": "equal",
+                    "value": "True"
+                  },
+                  "actionableDeeplink": {
+                    "deeplink": "voiceassist://masked/act/b3ed3ed663",
+                    "description": "Enables data backup to TechCorp Cloud via device Settings on the device.",
+                    "message": "Enable Back up data (TechCorp Cloud)",
+                    "classes": null,
+                    "originalType": "onURL"
+                  }
+                }
+              ],
+              "category": "auto"
+            },
+            {
+              "actionName": "Schedule Screen Repair Service",
+              "description": "It will schedule your repair appointment",
+              "stepGroups": [
+                {
+                  "steps": [
+                    "Contact Samsung Support or visit an authorized Samsung Service Center.",
+                    "Provide device details to schedule screen repair service."
+                  ],
+                  "validationDeeplink": null,
+                  "actionableDeeplink": null
+                }
+              ],
+              "category": "manual"
+            }
+          ],
+          "score": 0.95
+        }
+      ]
+    },
+    "meta": {
+      "latency_ms": 1.2,
+      "cache_hit": true,
+      "model": "gemini-2.5-flash",
+      "cost_usd": 0.0
+    }
+  },
+  {
+    "query": "My Nexa X1 Ultra only shows a blue (or black) screen with tiny text when I try to turn it on, and it won't start up. I tried holding the power button but it doesn't help.",
+    "query_variations": [
+      "My Galaxy S26 Ultra boots to a blue or black screen with tiny text and won't start up.",
+      "How to fix Galaxy S26 Ultra stuck on recovery screen with tiny text and blue display?",
+      "Phone won't boot past a blue screen with small writing even after holding power button.",
+      "Galaxy S26 Ultra displays blue recovery screen with small system text instead of booting.",
+      "Why does my Galaxy phone only show tiny text on a blue or black screen when turned on?",
+      "Stuck on Android recovery mode with tiny text on Galaxy S26 Ultra; how to reboot normally?",
+      "S26 Ultra shows a black or blue screen with error lines and holding power does nothing.",
+      "Reboot Galaxy S26 Ultra out of recovery mode when blue screen with tiny text appears.",
+      "Samsung Galaxy S26 Ultra will not start and only displays blue screen with tiny system font.",
+      "Troubleshoot phone stuck in recovery boot loop with small font on blue background."
+    ],
+    "response": {
+      "contexts": [
+        {
+          "goal": "Follow these steps to perform this Recovery Blue Troubleshooting",
+          "title": "Recovery screen mode",
+          "actions": [
+            {
+              "actionName": "Reboot System Recovery Mode",
+              "description": "It will reboot system from recovery mode",
+              "stepGroups": [
+                {
+                  "steps": [
+                    "Use Volume buttons to highlight Reboot system now.",
+                    "Press Power button to select and reboot device normally."
+                  ],
+                  "validationDeeplink": null,
+                  "actionableDeeplink": null
+                }
+              ],
+              "category": "critical"
+            }
+          ],
+          "score": 0.95
+        }
+      ]
+    },
+    "meta": {
+      "latency_ms": 1.2,
+      "cache_hit": true,
+      "model": "gemini-2.5-flash",
+      "cost_usd": 0.0
+    }
+  },
+  {
+    "query": "My TechCorp X1 Ultra screen flashes extremely quickly (in milliseconds) whenever I plug in a charger, making the display unusable for a short period.",
+    "query_variations": [
+      "My Samsung S Ultra screen flashes very quickly in milliseconds whenever I plug in a charger.",
+      "Why does my phone screen rapidly flash for a millisecond when connecting the charging cable?",
+      "Display blinks rapidly when charger is plugged into Samsung Galaxy S Ultra.",
+      "Screen flashes and flickers instantly whenever I connect my phone to the charger.",
+      "How to stop screen flashing milliseconds when inserting USB charger on Samsung Ultra?",
+      "Plug-in charging causes my Galaxy display to flash violently for a split second.",
+      "Is it normal for Samsung S Ultra screen to flash rapidly when connected to power adapter?",
+      "Display flicker occurring precisely when charging cable is attached to Galaxy device.",
+      "Troubleshoot rapid screen flash when plugging charger into Samsung Galaxy phone.",
+      "Charger connection triggers quick screen blinking glitch on Samsung S Ultra."
+    ],
+    "response": {
+      "contexts": [
+        {
+          "goal": "Follow these steps to perform this Charger Flicker Troubleshooting",
+          "title": "Charger display flicker",
+          "actions": [
+            {
+              "actionName": "Inspect Charger Cable Connection",
+              "description": "It will inspect charging port and cable",
+              "stepGroups": [
+                {
+                  "steps": [
+                    "Disconnect the charging cable and inspect port for dust.",
+                    "Test charging with an official TechCorp certified charger."
+                  ],
+                  "validationDeeplink": null,
+                  "actionableDeeplink": null
+                }
+              ],
+              "category": "manual"
+            }
+          ],
+          "score": 0.95
+        }
+      ]
+    },
+    "meta": {
+      "latency_ms": 1.2,
+      "cache_hit": true,
+      "model": "gemini-2.5-flash",
+      "cost_usd": 0.0
+    }
+  },
+  {
+    "query": "1. \"My Nexa X1 screen goes completely blank, just a dark screen with occasional scrolling and no visible content, so I can't see anything or use Data Transfer to transfer data.\"",
+    "query_variations": [
+      "Galaxy S24 screen is completely blank and dark with occasional scrolling and no visible content.",
+      "My S24 screen is black with rare scrolling lines; how can I use Smart Switch to transfer files?",
+      "Display is totally dark with occasional scrolling artifacts on Galaxy S24.",
+      "Cannot see any content on Galaxy S24 dark screen to perform Smart Switch backup.",
+      "How to recover data from Galaxy S24 when screen stays dark with occasional scrolling?",
+      "Galaxy S24 display shows no content, only a dark screen that scrolls occasionally.",
+      "Dark screen on Galaxy S24 prevents me from interacting or transferring data via Smart Switch.",
+      "Smart Switch transfer blocked by completely dark Galaxy S24 screen with occasional scroll.",
+      "Troubleshoot Galaxy S24 blank dark screen with phantom scrolling.",
+      "Steps to back up data from Galaxy S24 when screen is dark with scrolling glitches."
+    ],
+    "response": {
+      "contexts": [
+        {
+          "goal": "Follow these steps to perform this Display Blank Troubleshooting",
+          "title": "Dark display resolution",
+          "actions": [
+            {
+              "actionName": "Force Device Hardware Restart",
+              "description": "It will force restart the dark display",
+              "stepGroups": [
+                {
+                  "steps": [
+                    "Press and hold Power button and Volume down button together.",
+                    "Hold for at least fifteen seconds until the phone restarts."
+                  ],
+                  "validationDeeplink": null,
+                  "actionableDeeplink": null
+                }
+              ],
+              "category": "critical"
+            }
+          ],
+          "score": 0.95
+        }
+      ]
+    },
+    "meta": {
+      "latency_ms": 1.2,
+      "cache_hit": true,
+      "model": "gemini-2.5-flash",
+      "cost_usd": 0.0
+    }
+  },
+  {
+    "query": "1. \"My Nexa Fold X1 screen is cracked again right where it folds.\"\n2. \"The touch doesn't work on certain parts of the screen.\"\n3. \"I can hardly see anything on the display.\"",
+    "query_variations": [
+      "My Galaxy Z Flip 7 screen is cracked right at the fold and touch does not work.",
+      "Flip 7 folding crease is cracked, touch is broken, and display is barely visible.",
+      "How to back up files and repair Galaxy Z Flip 7 with cracked hinge fold and dead touch?",
+      "Cracked crease and unresponsive touch on Galaxy Z Flip 7 folding screen.",
+      "Folding area of my Z Flip 7 screen is cracked again and touch has stopped working.",
+      "Can hardly see anything on my Flip 7 screen because fold is cracked and touch failed.",
+      "Galaxy Z Flip 7 hinge screen crack repair and data backup procedure.",
+      "Touch dead on parts of screen and crack along the fold on Galaxy Flip 7.",
+      "Troubleshoot cracked fold display and broken touch digitizer on Galaxy Z Flip 7.",
+      "Where can I fix my Galaxy Z Flip 7 cracked folding glass and failing touch?"
+    ],
+    "response": {
+      "contexts": [
+        {
+          "goal": "Follow these steps to perform this Screen Crack Troubleshooting",
+          "title": "Fold screen crack",
+          "actions": [
+            {
+              "actionName": "Back Up Phone Data",
+              "description": "It will back up personal device files",
+              "stepGroups": [
+                {
+                  "steps": [
+                    "Navigate to and open Settings.",
+                    "Tap on Accounts and backup.",
+                    "Select Back up data to save files before repair."
+                  ],
+                  "validationDeeplink": {
+                    "deeplink": "voiceassist://masked/val/266037d0c5",
+                    "key": "Back up data (TechCorp Cloud)",
+                    "resultType": "boolean",
+                    "condition": "equal",
+                    "value": "True"
+                  },
+                  "actionableDeeplink": {
+                    "deeplink": "voiceassist://masked/act/b3ed3ed663",
+                    "description": "Enables data backup to TechCorp Cloud via device Settings on the device.",
+                    "message": "Enable Back up data (TechCorp Cloud)",
+                    "classes": null,
+                    "originalType": "onURL"
+                  }
+                }
+              ],
+              "category": "auto"
+            },
+            {
+              "actionName": "Schedule Screen Repair Service",
+              "description": "It will schedule your repair appointment",
+              "stepGroups": [
+                {
+                  "steps": [
+                    "Contact Samsung Support or visit an authorized Samsung Service Center.",
+                    "Provide device details to schedule screen repair service."
+                  ],
+                  "validationDeeplink": null,
+                  "actionableDeeplink": null
+                }
+              ],
+              "category": "manual"
+            }
+          ],
+          "score": 0.95
+        }
+      ]
+    },
+    "meta": {
+      "latency_ms": 1.2,
+      "cache_hit": true,
+      "model": "gemini-2.5-flash",
+      "cost_usd": 0.0
+    }
+  },
+  {
+    "query": "My Nexa A14 screen looks distorted right after I received the phone, and I need a diagnostic test.",
+    "query_variations": [
+      "My Galaxy A17 screen looks distorted right after receiving it; how do I run a diagnostic test?",
+      "Display appears distorted on new Galaxy A17 and I need to test the screen hardware.",
+      "How to diagnose distorted screen and display orientation on brand new Galaxy A17?",
+      "New Samsung Galaxy A17 display is warped or distorted; need screen diagnostic steps.",
+      "Run Samsung diagnostic test for distorted screen on newly delivered Galaxy A17.",
+      "Screen graphics look distorted on my fresh Galaxy A17; how to verify display health?",
+      "Galaxy A17 screen distortion troubleshooting and hardware sensor diagnostic test.",
+      "Why is my newly unboxed Galaxy A17 display distorted and how can I run diagnostics?",
+      "Diagnostic test procedure for display distortion on Samsung Galaxy A17.",
+      "Test screen alignment and display distortion on newly received Galaxy phone."
+    ],
+    "response": {
+      "contexts": [
+        {
+          "goal": "Follow these steps to perform this Screen Rotation Troubleshooting",
+          "title": "Auto rotate settings",
+          "actions": [
+            {
+              "actionName": "Configure Display Auto Rotate",
+              "description": "It will configure display auto rotate settings",
+              "stepGroups": [
+                {
+                  "steps": [
+                    "Swipe down from top of screen to open Quick panel.",
+                    "Tap Auto rotate icon to lock or unlock orientation."
+                  ],
+                  "validationDeeplink": {
+                    "deeplink": "voiceassist://masked/val/85d56d87a9",
+                    "key": "Screen lock/unlock",
+                    "resultType": "boolean",
+                    "condition": "equal",
+                    "value": "True"
+                  },
+                  "actionableDeeplink": {
+                    "deeplink": "voiceassist://masked/act/562a67add2",
+                    "description": "Enables screen lock and unlock sounds via device Settings on the device.",
+                    "message": "Enable Screen lock/unlock",
+                    "classes": null,
+                    "originalType": "onURL"
+                  }
+                }
+              ],
+              "category": "auto"
+            }
+          ],
+          "score": 0.95
+        }
+      ]
+    },
+    "meta": {
+      "latency_ms": 1.2,
+      "cache_hit": true,
+      "model": "gemini-2.5-flash",
+      "cost_usd": 0.0
+    }
+  },
+  {
+    "query": "My Nexa X1 screen inputs are delayed and the touch responsiveness is laggy, causing a noticeable delay when I try to interact with the phone.",
+    "query_variations": [
+      "My Galaxy S22 screen inputs are delayed and touch responsiveness is laggy.",
+      "How do I fix delayed touch input and laggy screen response on Galaxy S22?",
+      "Touchscreen latency on Galaxy S22 is causing noticeable delay when tapping.",
+      "Why is my Samsung Galaxy S22 touchscreen lagging and slow to respond to touch?",
+      "Increase touch sensitivity or fix touch lag on Galaxy S22 display.",
+      "Galaxy S22 screen touch response is sluggish with noticeable delays during interaction.",
+      "Taps and swipes are delayed on my Galaxy S22 screen; how to improve responsiveness?",
+      "Troubleshoot laggy and delayed touchscreen inputs on Samsung S22.",
+      "My Galaxy S22 takes too long to register screen touches and gestures.",
+      "Improve touch sensitivity and resolve input latency on Samsung Galaxy S22."
+    ],
+    "response": {
+      "contexts": [
+        {
+          "goal": "Follow these steps to perform this Touchscreen Latency Troubleshooting",
+          "title": "Touchscreen lag issues",
+          "actions": [
+            {
+              "actionName": "Configure Touch Sensitivity Settings",
+              "description": "It will increase touchscreen display input sensitivity",
+              "stepGroups": [
+                {
+                  "steps": [
+                    "Navigate to and open Settings.",
+                    "Tap on Display.",
+                    "Toggle on Touch sensitivity to improve screen responsiveness."
+                  ],
+                  "validationDeeplink": {
+                    "deeplink": "voiceassist://masked/val/6451858b28",
+                    "key": "Touch sensitivity",
+                    "resultType": null,
+                    "condition": null,
+                    "value": null
+                  },
+                  "actionableDeeplink": {
+                    "deeplink": "voiceassist://masked/act/1b0d34e9b4",
+                    "description": "Disables touch sensitivity via device Settings on the device.",
+                    "message": "Disable Touch sensitivity",
+                    "classes": null,
+                    "originalType": "offURL"
+                  }
+                }
+              ],
+              "category": "auto"
+            }
+          ],
+          "score": 0.95
+        }
+      ]
+    },
+    "meta": {
+      "latency_ms": 1.2,
+      "cache_hit": true,
+      "model": "gemini-2.5-flash",
+      "cost_usd": 0.0
+    }
+  },
+  {
+    "query": "My Nexa X1 Ultra screen is completely black and won't turn on, even though the phone powers on, rings, and otherwise works; there is no physical damage.",
+    "query_variations": [
+      "My Galaxy S24 Ultra screen is completely black and won't turn on, but the phone still rings.",
+      "Phone powers on and rings but Galaxy S24 Ultra screen stays completely black.",
+      "How to fix black screen on Galaxy S24 Ultra when phone is vibrating and working internally?",
+      "Galaxy S24 Ultra display is dead and won't light up even though phone is turned on.",
+      "Screen stays totally black on Galaxy S24 Ultra despite no physical damage and phone ringing.",
+      "Why does my Galaxy S24 Ultra receive calls and power on while the screen remains black?",
+      "Force restart Galaxy S24 Ultra when display won't turn on but phone is operational.",
+      "Troubleshoot functional Galaxy S24 Ultra with totally black unresponsive display.",
+      "Galaxy S24 Ultra black screen bug with working audio and incoming ringtones.",
+      "Display won't illuminate on Galaxy S24 Ultra although device turns on with no damage."
+    ],
+    "response": {
+      "contexts": [
+        {
+          "goal": "Follow these steps to perform this Display Unresponsive Troubleshooting",
+          "title": "Black screen resolution",
+          "actions": [
+            {
+              "actionName": "Force Device Power Restart",
+              "description": "It will force restart your mobile device",
+              "stepGroups": [
+                {
+                  "steps": [
+                    "Press and hold Power button and Volume down button simultaneously.",
+                    "Hold for twenty seconds until the TechCorp logo appears."
+                  ],
+                  "validationDeeplink": null,
+                  "actionableDeeplink": null
+                }
+              ],
+              "category": "critical"
+            }
+          ],
+          "score": 0.95
+        }
+      ]
+    },
+    "meta": {
+      "latency_ms": 1.2,
+      "cache_hit": true,
+      "model": "gemini-2.5-flash",
+      "cost_usd": 0.0
+    }
+  }
+]

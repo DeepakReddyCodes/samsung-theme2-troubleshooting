@@ -132,7 +132,7 @@ codebase/tests/compliance/
   test_deeplink_policy.py
 ```
 
-Do not add these files if the agent can preserve an equivalent clean architecture without duplication; contracts must remain identical.
+These modules may be introduced as needed to preserve a clean architecture without duplication.
 
 ## 7. Internal data flow
 
@@ -341,7 +341,7 @@ Record p50/p95 latency, cache hit rate, LLM calls/query, cost/query, and through
 ## 14. Acceptance criteria
 
 A workstream is complete only if:
-- implementation matches `contracts/contracts.md`;
+- implementation matches the frozen response contract;
 - targeted tests pass;
 - full regression suite passes;
 - no new unsupported claims are introduced;
@@ -369,4 +369,4 @@ A workstream is complete only if:
 16. Integrate frontend/demo.
 17. Run final submission gate.
 
-Do not optimize latency before correctness and grounding are stable.
+

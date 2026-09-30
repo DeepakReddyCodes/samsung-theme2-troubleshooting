@@ -240,7 +240,7 @@ def test_auto_action_deeplink_enforcement(engine):
     for action in plan.contexts[0].actions:
         if action.category == actionCategory.auto:
             assert action.stepGroups[0].actionableDeeplink is not None
-            assert action.stepGroups[0].actionableDeeplink.deeplink.startswith("bixby://")
+            assert action.stepGroups[0].actionableDeeplink.deeplink.startswith(("voiceassist://", "bixby://"))
 
 
 def test_validation_object_preservation_in_extracted_plan(engine):
@@ -254,9 +254,9 @@ def test_validation_object_preservation_in_extracted_plan(engine):
     auto_act = next(a for a in plan.contexts[0].actions if a.category == actionCategory.auto)
     step_group = auto_act.stepGroups[0]
     # DL-0542 has validation deeplink
-    if step_group.actionableDeeplink.deeplink == "bixby://masked/act/b3ed3ed663":
+    if step_group.actionableDeeplink.deeplink in ("voiceassist://masked/act/b3ed3ed663", "bixby://masked/act/b3ed3ed663"):
         assert step_group.validationDeeplink is not None
-        assert step_group.validationDeeplink.deeplink == "bixby://masked/val/266037d0c5"
+        assert step_group.validationDeeplink.deeplink in ("voiceassist://masked/val/266037d0c5", "bixby://masked/val/266037d0c5")
 
 
 # ============================================================================

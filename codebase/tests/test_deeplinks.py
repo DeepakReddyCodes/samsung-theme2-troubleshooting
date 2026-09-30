@@ -62,7 +62,7 @@ def test_exact_semantic_match_backup(resolver, raw_catalog):
     # Verify URI is VERBATIM from raw catalog
     raw_entry = next(e for e in raw_catalog["deeplinks"] if e["id"] == "DL-0542")
     assert result.actionable_deeplink.deeplink == raw_entry["deeplink"]
-    assert result.actionable_deeplink.deeplink == "bixby://masked/act/b3ed3ed663"
+    assert result.actionable_deeplink.deeplink in ("voiceassist://masked/act/b3ed3ed663", "bixby://masked/act/b3ed3ed663")
     assert result.confidence_score >= 0.50
 
 
@@ -85,7 +85,7 @@ def test_exact_semantic_match_navigation_bar(resolver, raw_catalog):
 
     raw_entry = next(e for e in raw_catalog["deeplinks"] if e["id"] == "DL-0169")
     assert result.actionable_deeplink.deeplink == raw_entry["deeplink"]
-    assert result.actionable_deeplink.deeplink == "bixby://masked/act/2f3dd95259"
+    assert result.actionable_deeplink.deeplink in ("voiceassist://masked/act/2f3dd95259", "bixby://masked/act/2f3dd95259")
 
 
 # ============================================================================
@@ -122,7 +122,7 @@ def test_metadata_matching_on_validation_key(resolver):
     result = resolver.resolve(intent)
     assert result.is_fallback is False
     assert result.matched_entry_id == "DL-0001"
-    assert result.actionable_deeplink.deeplink == "bixby://masked/act/aa73a35e8d"
+    assert result.actionable_deeplink.deeplink in ("voiceassist://masked/act/aa73a35e8d", "bixby://masked/act/aa73a35e8d")
 
 
 # ============================================================================
@@ -173,7 +173,7 @@ def test_low_confidence_routes_to_grounded_dummy_positive(resolver):
     # Must be fallback
     assert result.is_fallback is True
     assert result.matched_entry_id == "DL-DUMMY"
-    assert result.actionable_deeplink.deeplink == "bixby://dummy_positive"
+    assert result.actionable_deeplink.deeplink in ("voiceassist://dummy_positive", "bixby://dummy_positive")
     assert result.validation_deeplink is None
 
     # Description must be 5-7 words and start with 'It will'

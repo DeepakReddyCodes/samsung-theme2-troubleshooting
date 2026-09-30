@@ -1,5 +1,5 @@
 import React from 'react';
-import { Activity, ShieldCheck, AlertCircle, Wrench, BarChart3, Moon, Sun, Sparkles } from 'lucide-react';
+import { Activity, ShieldCheck, AlertCircle, Wrench, BarChart3, Moon, Sun, Sparkles, Download } from 'lucide-react';
 import { HealthResponse } from '../types';
 
 interface HeaderProps {
@@ -56,8 +56,17 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         </nav>
 
-        {/* Backend health status badge */}
+        {/* Backend health status badge & Export */}
         <div className="header-status-area">
+          <a
+            href="/v1/export/output.json"
+            download="output.json"
+            className="status-pill status-pill-download"
+            title="Download official output.json file"
+          >
+            <Download size={14} className="text-samsung-blue" />
+            <span className="status-text">Export output.json</span>
+          </a>
           <button
             className="status-pill"
             onClick={onRefreshHealth}

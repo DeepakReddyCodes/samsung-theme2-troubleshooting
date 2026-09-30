@@ -69,13 +69,13 @@ SCENARIO_METADATA = {
     "row_5": {
         "topic": "Secure Folder",
         "title": "Secure folder transfer",
-        "action_name": "Open Smart Switch Transfer",
-        "desc": "It will open smart switch settings page",
+        "action_name": "Open Data Transfer Settings",
+        "desc": "It will open data transfer settings page",
         "category": actionCategory.auto,
         "steps": [
             "Navigate to and open Settings.",
             "Tap on Accounts and backup.",
-            "Select Smart Switch to initiate data transfer.",
+            "Select Data Transfer to initiate data transfer.",
         ],
     },
     "row_7": {
@@ -132,7 +132,7 @@ SCENARIO_METADATA = {
         "desc": "It will schedule hardware screen inspection appointment",
         "category": actionCategory.manual,
         "steps": [
-            "Contact Samsung Support or visit an authorized service center.",
+            "Contact Customer Support or visit an authorized service center.",
             "Provide device inspection details regarding display panel blackout.",
         ],
     },
@@ -190,7 +190,7 @@ SCENARIO_METADATA = {
         "category": actionCategory.manual,
         "steps": [
             "Disconnect the charging cable and inspect port for dust.",
-            "Test charging with an official Samsung certified charger.",
+            "Test charging with an official TechCorp certified charger.",
         ],
     },
     "row_17": {
@@ -247,7 +247,7 @@ SCENARIO_METADATA = {
         "category": actionCategory.critical,
         "steps": [
             "Press and hold Power button and Volume down button simultaneously.",
-            "Hold for twenty seconds until the Samsung logo appears.",
+            "Hold for twenty seconds until the TechCorp logo appears.",
         ],
     },
 }
@@ -404,6 +404,38 @@ def prewarm_canonical_scenarios(
             intent_vector=intent_vec,
             rebuild_matrix=False,
         )
+
+        # Also store dual brand variations so both original dataset and anonymized queries hit exact Tier 1
+        aliases = []
+        if "smartphone" in orig_query.lower():
+            aliases.append(re.sub(r"\bsmartphone\b", "Galaxy phone", orig_query, flags=re.IGNORECASE))
+            aliases.append(re.sub(r"\bsmartphone\b", "Nexa phone", orig_query, flags=re.IGNORECASE))
+        if "nexa" in orig_query.lower():
+            aliases.append(re.sub(r"\bnexa\b", "Galaxy", orig_query, flags=re.IGNORECASE))
+        if "techcorp" in orig_query.lower():
+            aliases.append(re.sub(r"\btechcorp\b", "Samsung", orig_query, flags=re.IGNORECASE))
+
+        for alias in aliases:
+            if alias.strip() != orig_query.strip():
+                cache.put(
+                    query=alias,
+                    response=plan,
+                    siis_response=siis_resp,
+                    scenario_id=sc_id,
+                    validate=False,
+                    intent_vector=intent_vec,
+                    rebuild_matrix=False,
+                )
+                cache.put(
+                    query=alias,
+                    response=plan,
+                    siis_response=None,
+                    scenario_id=sc_id,
+                    validate=False,
+                    intent_vector=intent_vec,
+                    rebuild_matrix=False,
+                )
+
         prewarmed_count += 1
 
     # Rebuild vector matrix once at the end

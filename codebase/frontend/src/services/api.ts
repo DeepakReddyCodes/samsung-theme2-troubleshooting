@@ -119,6 +119,10 @@ export async function executeTroubleshoot(
     const cacheHitHeader = res.headers.get('X-Cache-Hit') === 'true';
     const cacheTypeHeader = (res.headers.get('X-Cache-Type') || 'miss') as 'exact' | 'semantic' | 'miss';
     const extractionPathHeader = (res.headers.get('X-Extraction-Path') || 'cold_path') as 'cache' | 'cold_path';
+    const nbeSufficient = res.headers.get('X-NBE-Sufficient') === 'true';
+    const nbeEntropy = parseFloat(res.headers.get('X-NBE-Entropy') || '0');
+    const nbeConfidence = parseFloat(res.headers.get('X-NBE-Confidence') || '1.0');
+    const nbeEig = parseFloat(res.headers.get('X-NBE-EIG') || '0');
 
     const telemetry: TelemetryMetadata = {
       processTimeMs: Math.round(rawProcessMs * 1000) / 1000,
@@ -127,6 +131,10 @@ export async function executeTroubleshoot(
       extractionPath: extractionPathHeader,
       roundtripMs,
       timestamp: new Date().toLocaleTimeString(),
+      nbeSufficient,
+      nbeEntropy,
+      nbeConfidence,
+      nbeEig,
     };
 
     // Store in telemetry history (keep latest 50 entries)
