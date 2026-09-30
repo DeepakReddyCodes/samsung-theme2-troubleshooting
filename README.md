@@ -55,6 +55,9 @@ The **Samsung Smart Guided Troubleshooting Engine** ingests natural language dev
 - ✅ **Zero web URL leaks** — no `http://`, `https://`, or `www.` in any response
 
 ---
+Youtube  Demo link: https://youtu.be/LECs04dMLfk
+
+
 
 ## 🧠 Key Innovation: Next-Best-Evidence (NBE)
 
