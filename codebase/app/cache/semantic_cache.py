@@ -330,10 +330,6 @@ class FastPathSemanticCache:
         if entry:
             # Version isolation
             if entry.key == self._compute_key(entry.normalized_query, entry.siis_fingerprint):
-                with self._lock:
-                    entry.hit_count += 1
-                    self.exact_hits += 1
-
                 # Req 7: Cached responses MUST pass ValidationFirewall before return
                 validated_resp, errors = self.firewall.validate_response(entry.response, allow_repair=False)
                 if errors:
@@ -352,6 +348,8 @@ class FastPathSemanticCache:
                             "confidence": 0.0,
                         }
 
+                    entry.hit_count += 1
+                    self.exact_hits += 1
                     self.latencies_ms.append(t_ms)
                 return validated_resp, {
                     "cache_hit": True,
@@ -402,10 +400,6 @@ class FastPathSemanticCache:
                             if candidate.key != self._compute_key(candidate.normalized_query, candidate.siis_fingerprint):
                                 continue
 
-                            with self._lock:
-                                candidate.hit_count += 1
-                                self.semantic_hits += 1
-
                             # Req 7: Cached responses MUST pass ValidationFirewall before return
                             validated_resp, errors = self.firewall.validate_response(candidate.response, allow_repair=False)
                             if errors:
@@ -417,6 +411,8 @@ class FastPathSemanticCache:
                                     # Cache invalidated or dependencies changed during validation
                                     continue
 
+                                candidate.hit_count += 1
+                                self.semantic_hits += 1
                                 t_ms = (time.perf_counter() - t0) * 1000.0
                                 self.latencies_ms.append(t_ms)
                                 return validated_resp, {

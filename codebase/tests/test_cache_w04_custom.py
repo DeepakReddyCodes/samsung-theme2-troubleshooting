@@ -239,3 +239,35 @@ def test_concurrent_stress(cache, valid_response):
     # Check stats safely
     stats = cache.get_stats()
     assert stats["total_lookups"] >= 0
+
+def test_invalidation_during_validation_race(cache, valid_response):
+    # Tests that hit accounting and retrieval is aborted if an invalidation
+    # happens WHILE the validation firewall is processing the response.
+
+    # 1. Store standard response
+    cache.put("race query", valid_response)
+
+    # 2. Patch firewall to inject an invalidation exactly during validation
+    original_validate = cache.firewall.validate_response
+
+    def mock_validate(resp, allow_repair):
+        cache.invalidate(reason="simulated_race")
+        return original_validate(resp, allow_repair)
+
+    cache.firewall.validate_response = mock_validate
+
+    # 3. Capture initial hit states
+    initial_exact_hits = cache.exact_hits
+
+    # 4. Execute retrieval race
+    resp, meta = cache.get("race query")
+
+    # 5. Verify the validation race aborted retrieval
+    assert resp is None, "Should miss because cache was invalidated during validation"
+    assert meta["cache_hit"] is False
+
+    # 6. Verify hit telemetry did NOT increment
+    assert cache.exact_hits == initial_exact_hits, "Telemetry must not increment on aborted hits"
+
+    # Clean up mock
+    cache.firewall.validate_response = original_validate
