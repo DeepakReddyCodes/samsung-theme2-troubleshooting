@@ -46,24 +46,35 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+import os
+
 # Enable CORS for frontend and evaluation clients
 # Security: In production, allow_origins should not be "*" when allow_credentials is True.
-# However, for this hackathon evaluation harness and W07 metric collection, this config is acceptable.
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-    expose_headers=[
-        "X-Process-Time-Ms",
-        "X-Cache-Hit",
-        "X-Cache-Type",
-        "X-Extraction-Path",
+# CORS configuration is environment-driven. Defaulting to local development constraints for prototype.
+CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",")
+ENABLE_TELEMETRY_HEADERS = os.getenv("ENABLE_TELEMETRY_HEADERS", "true").lower() == "true"
+
+expose_headers_list = [
+    "X-Process-Time-Ms",
+    "X-Cache-Hit",
+    "X-Cache-Type",
+    "X-Extraction-Path",
+]
+
+if ENABLE_TELEMETRY_HEADERS:
+    expose_headers_list.extend([
         "X-Cache-Time-Ms",
         "X-Extract-Time-Ms",
         "X-Serialize-Time-Ms",
-    ],
+    ])
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=expose_headers_list,
 )
 
 
@@ -222,9 +233,12 @@ async def troubleshoot(
             response.headers["X-Cache-Hit"] = "true"
             response.headers["X-Cache-Type"] = telemetry.get("hit_type", "exact")
             response.headers["X-Extraction-Path"] = "cache"
-            response.headers["X-Cache-Time-Ms"] = f"{cache_lookup_ms:.3f}"
-            response.headers["X-Extract-Time-Ms"] = "0.000"
-            response.headers["X-Serialize-Time-Ms"] = f"{serialize_ms:.3f}"
+
+            if ENABLE_TELEMETRY_HEADERS:
+                response.headers["X-Cache-Time-Ms"] = f"{cache_lookup_ms:.3f}"
+                response.headers["X-Extract-Time-Ms"] = "0.000"
+                response.headers["X-Serialize-Time-Ms"] = f"{serialize_ms:.3f}"
+
             return validated_plan
         else:
             logger.warning(f"Cached plan failed validation ({errors}). Routing to cold extraction.")
@@ -251,9 +265,11 @@ async def troubleshoot(
     response.headers["X-Cache-Hit"] = "false"
     response.headers["X-Cache-Type"] = "miss"
     response.headers["X-Extraction-Path"] = "cold_path"
-    response.headers["X-Cache-Time-Ms"] = f"{cache_lookup_ms:.3f}"
-    response.headers["X-Extract-Time-Ms"] = f"{extract_ms:.3f}"
-    response.headers["X-Serialize-Time-Ms"] = f"{serialize_ms:.3f}"
+
+    if ENABLE_TELEMETRY_HEADERS:
+        response.headers["X-Cache-Time-Ms"] = f"{cache_lookup_ms:.3f}"
+        response.headers["X-Extract-Time-Ms"] = f"{extract_ms:.3f}"
+        response.headers["X-Serialize-Time-Ms"] = f"{serialize_ms:.3f}"
 
     return final_plan
 
