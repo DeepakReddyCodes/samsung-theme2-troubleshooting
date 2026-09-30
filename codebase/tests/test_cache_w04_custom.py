@@ -86,9 +86,9 @@ def test_cache_return_validation(cache):
     # Put a valid response
     cache.put("my validate query", valid, validate=False)
 
-    # Mutate the exact store to make it invalid (simulating catalog change over time)
-    # The validation firewall evaluates this during `get()`. It cannot repair an invalid catalog URI.
-    cache.exact_store[cache._compute_key("my validate query", compute_siis_fingerprint(None))].response.contexts[0].actions[0].stepGroups[0].actionableDeeplink.deeplink = "bixby://masked/act/removed_from_catalog"
+    # Mutate the exact store to make it invalid (simulating schema/catalog change over time)
+    # The title should be 2-3 words. We will make it 8 words. Since allow_repair=False is now used on retrieval, this should fail.
+    cache.exact_store[cache._compute_key("my validate query", compute_siis_fingerprint(None))].response.contexts[0].title = "This is a very long title that should fail validation"
 
     resp, meta = cache.get("my validate query")
     assert resp is None, "Should not return an invalid response that fails the firewall on cache return"

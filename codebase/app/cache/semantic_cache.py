@@ -309,7 +309,7 @@ class FastPathSemanticCache:
                 self.exact_hits += 1
 
                 # Req 7: Cached responses MUST pass ValidationFirewall before return
-                validated_resp, errors = self.firewall.validate_response(entry.response, allow_repair=True)
+                validated_resp, errors = self.firewall.validate_response(entry.response, allow_repair=False)
                 if errors:
                     logger.error(f"Cached response failed validation on return: {errors}")
                     return None, {"cache_hit": False, "hit_type": "invalid_cached", "latency_ms": 0.0, "scenario_id": None, "confidence": 0.0}
@@ -354,7 +354,7 @@ class FastPathSemanticCache:
                         self.semantic_hits += 1
 
                         # Req 7: Cached responses MUST pass ValidationFirewall before return
-                        validated_resp, errors = self.firewall.validate_response(candidate.response, allow_repair=True)
+                        validated_resp, errors = self.firewall.validate_response(candidate.response, allow_repair=False)
                         if errors:
                             logger.error(f"Semantic cached response failed validation on return: {errors}")
                             continue  # Try next candidate if available
