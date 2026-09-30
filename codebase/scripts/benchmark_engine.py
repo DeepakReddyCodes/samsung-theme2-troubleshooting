@@ -13,6 +13,7 @@ import math
 import os
 from pathlib import Path
 import platform
+import os
 import re
 import sys
 import time
@@ -20,6 +21,9 @@ from typing import Any, Dict, List, Tuple
 
 WORKSPACE_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(WORKSPACE_ROOT))
+
+# Force telemetry headers on for benchmarking BEFORE importing app.main
+os.environ["ENABLE_TELEMETRY_HEADERS"] = "true"
 
 from fastapi.testclient import TestClient
 from app.main import app

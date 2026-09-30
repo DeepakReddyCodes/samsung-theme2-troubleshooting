@@ -1,10 +1,15 @@
 import pytest
 from fastapi.testclient import TestClient
-from app.main import app
+import os
+import importlib
+import app.main
 
 def test_cors_telemetry_headers_exposed():
     """Verify that telemetry headers are exposed via CORS."""
-    client = TestClient(app)
+    os.environ["ENABLE_TELEMETRY_HEADERS"] = "true"
+    importlib.reload(app.main)
+
+    client = TestClient(app.main.app)
 
     # Send an OPTIONS request to trigger CORS preflight handling
     response = client.options(
@@ -19,7 +24,7 @@ def test_cors_telemetry_headers_exposed():
     assert response.status_code == 200
 
     # Use context manager to properly trigger lifespan startup/ready state
-    with TestClient(app) as client:
+    with TestClient(app.main.app) as client:
         payload = {
             "query": "Test query",
             "siis_response": {

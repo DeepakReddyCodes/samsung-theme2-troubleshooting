@@ -51,8 +51,9 @@ import os
 # Enable CORS for frontend and evaluation clients
 # Security: In production, allow_origins should not be "*" when allow_credentials is True.
 # CORS configuration is environment-driven. Defaulting to local development constraints for prototype.
-CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",")
-ENABLE_TELEMETRY_HEADERS = os.getenv("ENABLE_TELEMETRY_HEADERS", "true").lower() == "true"
+raw_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",")
+CORS_ORIGINS = [orig.strip() for orig in raw_origins if orig.strip()]
+ENABLE_TELEMETRY_HEADERS = os.getenv("ENABLE_TELEMETRY_HEADERS", "false").lower() == "true"
 
 expose_headers_list = [
     "X-Process-Time-Ms",

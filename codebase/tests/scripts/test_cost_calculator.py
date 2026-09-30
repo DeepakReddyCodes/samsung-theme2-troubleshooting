@@ -64,11 +64,22 @@ def test_cost_calculator_cache_hit_rate_above_one():
     with pytest.raises(ValueError, match="Cache hit rate must be between 0.0 and 1.0 inclusive and finite"):
         calculate_cost(1000, 300, 100000, 0.15, 0.60, 1.1)
 
-def test_cost_calculator_non_finite_inputs():
-    import math
-    with pytest.raises(ValueError, match="Input tokens per request must be >= 0 and finite"):
-        calculate_cost(math.inf, 300, 100000, 0.15, 0.60, 0.5)
-    with pytest.raises(ValueError, match="Requests per month must be >= 0 and finite"):
-        calculate_cost(1000, 300, math.nan, 0.15, 0.60, 0.5)
-    with pytest.raises(ValueError, match="Cache hit rate must be between 0.0 and 1.0 inclusive and finite"):
-        calculate_cost(1000, 300, 100000, 0.15, 0.60, math.inf)
+@pytest.mark.parametrize("param_idx,val,err_msg", [
+    (0, float("inf"), "Input tokens per request must be >= 0 and finite"),
+    (0, float("nan"), "Input tokens per request must be >= 0 and finite"),
+    (1, float("inf"), "Output tokens per request must be >= 0 and finite"),
+    (1, float("nan"), "Output tokens per request must be >= 0 and finite"),
+    (2, float("inf"), "Requests per month must be >= 0 and finite"),
+    (2, float("nan"), "Requests per month must be >= 0 and finite"),
+    (3, float("inf"), "Price per 1M input tokens must be >= 0 and finite"),
+    (3, float("nan"), "Price per 1M input tokens must be >= 0 and finite"),
+    (4, float("inf"), "Price per 1M output tokens must be >= 0 and finite"),
+    (4, float("nan"), "Price per 1M output tokens must be >= 0 and finite"),
+    (5, float("inf"), "Cache hit rate must be between 0.0 and 1.0 inclusive and finite"),
+    (5, float("nan"), "Cache hit rate must be between 0.0 and 1.0 inclusive and finite"),
+])
+def test_cost_calculator_non_finite_inputs(param_idx, val, err_msg):
+    args = [1000, 300, 100000, 0.15, 0.60, 0.5]
+    args[param_idx] = val
+    with pytest.raises(ValueError, match=err_msg):
+        calculate_cost(*args)
