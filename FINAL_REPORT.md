@@ -1,16 +1,14 @@
 # W02 Grounded Extraction Final Report
 
-**Implementation Commit SHA:** d998c4e8177d08ad7944195cf083a0ed104b8ecb
-*(Note: This SHA unambiguously references the preceding commit that actually implements the W02 functional changes and tests, separating it from this documentation-only commit).*
-
+**Commit SHA:** 8028238128ba7f09f0df1e15b3c3b0eb6ff9d936
 **Base SHA:** c62505771b6063a5d363151ea51cfc0cfe43e876
 *(Note: The base commit on origin/main is `bf10432406fc7d28db210c9ea43061f61b867640` but we are validating against the requested target context).*
 
 **Files Changed (in Implementation Commit):**
-* `codebase/app/cache/semantic_cache.py`
 * `codebase/app/services/extractor/engine.py`
 * `codebase/app/services/extractor/grounding_checker.py`
 * `codebase/tests/test_extraction.py`
+* `FINAL_REPORT.md`
 
 **W02 Implemented Grounding Behavior:**
 * **Empty/Missing SIIS:** When the extraction engine (`ColdPathExtractionEngine`) evaluates an empty SIIS payload, it returns an empty `ContextDeeplinkResponse(contexts=[])`. The previously hardcoded fallback steps (`"General Device Support", "Check Samsung device settings"`) have been explicitly removed.
@@ -30,7 +28,7 @@
 * **W06 Evaluation:** Evidential/Generalization test framework implementations were untouched.
 
 **Tests Run & Results:**
-* Total 97 Backend + Compliance Tests passed seamlessly.
+* Total 96 Backend + Compliance Tests passed seamlessly.
 * Specifically executed tests directly validating explicitly requested behaviors:
   * empty SIIS behavior: pass
   * unsupported invented step (prompt injection simulation included): pass

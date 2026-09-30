@@ -91,30 +91,20 @@ class GroundingChecker:
 
         is_grounded = score >= self.threshold
 
-        # W02 Minimal Contradiction Check (Target-Aware)
+        # W02 Minimal Contradiction Check
         step_lower = step.lower()
-        step_is_disable = "turn off" in step_lower or "disable" in step_lower
-        step_is_enable = "turn on" in step_lower or "enable" in step_lower
 
-        if step_is_disable or step_is_enable:
-            polarity_words = {"turn", "off", "on", "enable", "disable", "turned", "disabled", "enabled"}
-            target_tokens = set(step_tokens) - polarity_words
+        # If step explicitly disables but SIIS explicitly enables (and not vice versa)
+        if ("turn off" in step_lower or "disable" in step_lower) and \
+           ("turn on" in siis_lower or "enable" in siis_lower or "turned on" in siis_lower) and \
+           not ("turn off" in siis_lower or "disable" in siis_lower):
+            is_grounded = False
 
-            if target_tokens:
-                sentences = re.split(r"[.\n]+", siis_text)
-                for s in sentences:
-                    s_lower = s.lower()
-                    s_tokens = set(tokenize_content_words(s))
-
-                    # Only consider sentences discussing the same target
-                    if target_tokens.intersection(s_tokens):
-                        s_is_enable = "turn on" in s_lower or "enable" in s_lower or "turned on" in s_lower
-                        s_is_disable = "turn off" in s_lower or "disable" in s_lower or "turned off" in s_lower
-
-                        if step_is_disable and s_is_enable and not s_is_disable:
-                            is_grounded = False
-                        if step_is_enable and s_is_disable and not s_is_enable:
-                            is_grounded = False
+        # If step explicitly enables but SIIS explicitly disables
+        if ("turn on" in step_lower or "enable" in step_lower) and \
+           ("turn off" in siis_lower or "disable" in siis_lower or "turned off" in siis_lower) and \
+           not ("turn on" in siis_lower or "enable" in siis_lower):
+            is_grounded = False
 
         # Find best evidence snippet from SIIS text
         evidence_snippet = ""
