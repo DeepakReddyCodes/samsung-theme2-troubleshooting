@@ -31,14 +31,61 @@ def test_polarity_differences_no_collision():
 
     from app.core.schema import Goal, Action, StepGroup, actionCategory
     resp = ContextDeeplinkResponse(contexts=[Goal(goal="Follow these steps to perform this Valid Troubleshooting.", title="Valid Title", actions=[Action(actionName="A", description="It will do a thing", stepGroups=[StepGroup(steps=["S"])], category=actionCategory.manual)], score=1.0)])
-    cache.put("how do i enable wifi", resp, scenario_id="wifi_on")
 
-    # Opposing intent
+    # CASE 1: enable vs disable
+    cache.put("how do i enable wifi", resp, scenario_id="wifi_on")
     resp_miss, meta = cache.get("how do i disable wifi")
-    # Our intent conflict check should prevent this from hitting
     assert resp_miss is None
     assert meta["cache_hit"] is False
 
+    # CASE 2: negated_enable vs enable
+    cache_neg_en = FastPathSemanticCache()
+    cache_neg_en.put("do not enable wifi", resp, scenario_id="wifi_no_on")
+    resp_miss, meta = cache_neg_en.get("how do i enable wifi")
+    assert resp_miss is None
+    assert meta["cache_hit"] is False
+
+    # CASE 3: negated_disable vs disable
+    cache_neg_dis = FastPathSemanticCache()
+    cache_neg_dis.put("do not disable wifi", resp, scenario_id="wifi_no_off")
+    resp_miss, meta = cache_neg_dis.get("how do i disable wifi")
+    assert resp_miss is None
+    assert meta["cache_hit"] is False
+
+    # CASE 4: lock vs unlock
+    cache.put("how do i lock my screen", resp, scenario_id="lock")
+    resp_miss, meta = cache.get("how do i unlock my screen")
+    assert resp_miss is None
+    assert meta["cache_hit"] is False
+
+    # CASE 5: backup vs restore
+    cache.put("how to backup my data", resp, scenario_id="backup")
+    resp_miss, meta = cache.get("how to restore my data")
+    assert resp_miss is None
+    assert meta["cache_hit"] is False
+
+
+def test_cache_enrichment_normalization():
+    """Ensure equivalent enriched queries hit exactly, while differing intents do not."""
+    cache = FastPathSemanticCache()
+    from app.core.schema import Goal, Action, StepGroup, actionCategory
+    resp = ContextDeeplinkResponse(contexts=[Goal(goal="Follow these steps to perform this Valid Troubleshooting.", title="Valid Title", actions=[Action(actionName="A", description="It will do a thing", stepGroups=[StepGroup(steps=["S"])], category=actionCategory.manual)], score=1.0)])
+
+    # Equivalence: both should enrich to 'turn on wifi' or 'enable wifi'
+    q1 = "please tell me how to turn on wifi"
+    q2 = "hey how do i turn on wifi"
+    cache.put(q1, resp, scenario_id="wifi_on")
+
+    hit, meta = cache.get(q2)
+    assert hit is not None
+    assert meta["cache_hit"] is True
+    assert meta["hit_type"] == "exact"
+
+    # Conflicting intents should miss entirely
+    q3 = "do not turn on wifi"
+    miss, meta_miss = cache.get(q3)
+    assert miss is None
+    assert meta_miss["cache_hit"] is False
 
 def test_engine_catalog_version_changes_invalidate_cache():
     """Ensure version changes prevent stale entry reuse."""
