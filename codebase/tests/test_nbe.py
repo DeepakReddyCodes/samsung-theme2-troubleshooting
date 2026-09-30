@@ -203,15 +203,13 @@ def test_engine_zero_total_posterior(engine):
     with pytest.raises(ValueError, match="Zero total posterior probability: observations contradict all hypotheses."):
         engine.get_posterior_probabilities(priors, observations, likelihoods)
 
-def test_engine_unavailable_likelihood_semantics(engine):
+def test_engine_unavailable_likelihood_semantics_rejected(engine):
     priors = {"h1": 0.7, "h2": 0.3}
     observations = {"e1": True}
     likelihoods = {} # Unknown likelihood
 
-    posteriors = engine.get_posterior_probabilities(priors, observations, likelihoods)
-    # Should be uninformative (0.5), posterior equals prior
-    assert posteriors["h1"] == pytest.approx(0.7)
-    assert posteriors["h2"] == pytest.approx(0.3)
+    with pytest.raises(ValueError, match="Missing explicit likelihood for observed evidence e1 and hypothesis h1"):
+        engine.get_posterior_probabilities(priors, observations, likelihoods)
 
 def test_eig_hand_calculated(engine):
     # Setup simple 2-hypothesis case

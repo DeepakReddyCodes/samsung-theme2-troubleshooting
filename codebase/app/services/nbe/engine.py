@@ -26,15 +26,13 @@ class NBEEvaluationEngine:
         for h_id, prior in priors.items():
             prob = prior
             for e_id, is_true in observations.items():
-                if e_id in likelihoods and h_id in likelihoods[e_id]:
-                    p_e_given_h = likelihoods[e_id][h_id]
-                    if not is_true:
-                        p_e_given_h = 1.0 - p_e_given_h
-                    prob *= p_e_given_h
-                else:
-                    # If likelihood is unknown, assume it doesn't inform the hypothesis
-                    # (Uniform likelihood 0.5)
-                    prob *= 0.5
+                if e_id not in likelihoods or h_id not in likelihoods[e_id]:
+                    raise ValueError(f"Missing explicit likelihood for observed evidence {e_id} and hypothesis {h_id}")
+
+                p_e_given_h = likelihoods[e_id][h_id]
+                if not is_true:
+                    p_e_given_h = 1.0 - p_e_given_h
+                prob *= p_e_given_h
             unnormalized_posteriors[h_id] = prob
 
         total_prob = sum(unnormalized_posteriors.values())
