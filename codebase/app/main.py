@@ -46,19 +46,36 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+import os
+
 # Enable CORS for frontend and evaluation clients
+# Security: In production, allow_origins should not be "*" when allow_credentials is True.
+# CORS configuration is environment-driven. Defaulting to local development constraints for prototype.
+raw_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",")
+CORS_ORIGINS = [orig.strip() for orig in raw_origins if orig.strip()]
+ENABLE_TELEMETRY_HEADERS = os.getenv("ENABLE_TELEMETRY_HEADERS", "false").lower() == "true"
+
+expose_headers_list = [
+    "X-Process-Time-Ms",
+    "X-Cache-Hit",
+    "X-Cache-Type",
+    "X-Extraction-Path",
+]
+
+if ENABLE_TELEMETRY_HEADERS:
+    expose_headers_list.extend([
+        "X-Cache-Time-Ms",
+        "X-Extract-Time-Ms",
+        "X-Serialize-Time-Ms",
+    ])
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=[
-        "X-Process-Time-Ms",
-        "X-Cache-Hit",
-        "X-Cache-Type",
-        "X-Extraction-Path",
-    ],
+    expose_headers=expose_headers_list,
 )
 
 
@@ -196,32 +213,51 @@ async def troubleshoot(
     }
 
     # 1. Tier 1 / Tier 2 Cache Lookup
+    t_cache_start = time.perf_counter()
     cached_plan, telemetry = app_state.cache.get(
         query=request.query,
         siis_response=siis_dict,
     )
+    t_cache_end = time.perf_counter()
+    cache_lookup_ms = (t_cache_end - t_cache_start) * 1000.0
 
     if cached_plan is not None:
         # Constraint: Cached responses must ALWAYS pass ValidationFirewall before returning
+        t_serialize_start = time.perf_counter()
         validated_plan, errors = app_state.firewall.validate_response(cached_plan, allow_repair=True)
+        t_serialize_end = time.perf_counter()
+        serialize_ms = (t_serialize_end - t_serialize_start) * 1000.0
+
         if not errors:
             process_ms = (time.perf_counter() - t0) * 1000.0
             response.headers["X-Process-Time-Ms"] = f"{process_ms:.3f}"
             response.headers["X-Cache-Hit"] = "true"
             response.headers["X-Cache-Type"] = telemetry.get("hit_type", "exact")
             response.headers["X-Extraction-Path"] = "cache"
+
+            if ENABLE_TELEMETRY_HEADERS:
+                response.headers["X-Cache-Time-Ms"] = f"{cache_lookup_ms:.3f}"
+                response.headers["X-Extract-Time-Ms"] = "0.000"
+                response.headers["X-Serialize-Time-Ms"] = f"{serialize_ms:.3f}"
+
             return validated_plan
         else:
             logger.warning(f"Cached plan failed validation ({errors}). Routing to cold extraction.")
 
     # 2. Cold-Path Knowledge Extraction on Miss
+    t_extract_start = time.perf_counter()
     extracted_plan = app_state.cold_engine.extract_and_build(
         query=request.query,
         siis_response=siis_dict,
     )
+    t_extract_end = time.perf_counter()
+    extract_ms = (t_extract_end - t_extract_start) * 1000.0
 
     # Constraint: Cold-path responses must ALWAYS pass ValidationFirewall before returning
+    t_serialize_start = time.perf_counter()
     final_plan, errors = app_state.firewall.validate_response(extracted_plan, allow_repair=True)
+    t_serialize_end = time.perf_counter()
+    serialize_ms = (t_serialize_end - t_serialize_start) * 1000.0
     if errors:
         logger.error(f"Cold-path extraction produced residual validation errors: {errors}")
 
@@ -230,6 +266,11 @@ async def troubleshoot(
     response.headers["X-Cache-Hit"] = "false"
     response.headers["X-Cache-Type"] = "miss"
     response.headers["X-Extraction-Path"] = "cold_path"
+
+    if ENABLE_TELEMETRY_HEADERS:
+        response.headers["X-Cache-Time-Ms"] = f"{cache_lookup_ms:.3f}"
+        response.headers["X-Extract-Time-Ms"] = f"{extract_ms:.3f}"
+        response.headers["X-Serialize-Time-Ms"] = f"{serialize_ms:.3f}"
 
     return final_plan
 

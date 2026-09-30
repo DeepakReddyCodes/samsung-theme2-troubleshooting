@@ -6,12 +6,14 @@ Measures:
 3. Paraphrase Queries Benchmark (P50, P95, P99, Hit Rate)
 4. Unseen SIIS Scenarios Generalization Benchmark (Cold-path latency, P50, P95, P99, Validity)
 5. Server Processing Latency vs End-to-End Latency
-6. Official 12-Gate Schema & Quality Validation
+6. 12-Gate Schema & Quality Validation
 """
 import json
 import math
 import os
 from pathlib import Path
+import platform
+import os
 import re
 import sys
 import time
@@ -19,6 +21,9 @@ from typing import Any, Dict, List, Tuple
 
 WORKSPACE_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(WORKSPACE_ROOT))
+
+# Force telemetry headers on for benchmarking BEFORE importing app.main
+os.environ["ENABLE_TELEMETRY_HEADERS"] = "true"
 
 from fastapi.testclient import TestClient
 from app.main import app
@@ -224,10 +229,35 @@ def percentile(data: List[float], p: float) -> float:
     return d0 + d1
 
 
+def get_system_metadata() -> Dict[str, Any]:
+    """Capture benchmark execution environment and configuration metadata."""
+    import fastapi
+    import pydantic
+
+    return {
+        "operating_system": platform.system() + " " + platform.release(),
+        "python_version": platform.python_version(),
+        "fastapi_version": fastapi.__version__,
+        "pydantic_version": pydantic.__version__,
+        "benchmark_mode": "offline_deterministic",
+        "provider": "DeterministicFallbackExtractor (Mock)",
+        "models_loaded": "SentenceTransformer (MiniLM-L6-v2) for cache",
+        "llm_called": False,
+        "state": "Pre-warmed cache available"
+    }
+
 def run_benchmark():
+    metadata = get_system_metadata()
+
     print("=" * 80)
-    print("SAMSUNG PRISM GENAI HACKATHON — OFFICIAL PHASE 7 BENCHMARK SUITE")
+    print("SAMSUNG PRISM THEME 2 — W07 ENGINEERING BENCHMARK SUITE")
     print("=" * 80)
+    print(f"OS: {metadata['operating_system']} | Python: {metadata['python_version']}")
+    print(f"Mode: {metadata['benchmark_mode']} | Provider: {metadata['provider']}")
+    print("NOTE: Cold path extraction in this execution mode uses")
+    print("deterministic/offline extraction. It does not represent")
+    print("production LLM (e.g. Gemini/OpenAI) latency.")
+    print("================================================================================")
 
     # ------------------------------------------------------------------------
     # 1. Startup & Model Initialization Benchmark
@@ -242,7 +272,7 @@ def run_benchmark():
         health_data = health_resp.json()
         assert health_data["status"] == "ok"
 
-        print(f"-> Startup & Prewarming Duration: {startup_duration:.3f} s (Official Target: <= 8.0 s)")
+        print(f"-> Startup & Prewarming Duration: {startup_duration:.3f} s (W07 Engineering Performance Target: <= 8.0 s)")
         startup_gate_pass = startup_duration <= 8.0
         print(f"-> Startup Gate: {'PASS' if startup_gate_pass else 'FAIL'}")
 
@@ -301,7 +331,7 @@ def run_benchmark():
         p99_repeat_http = percentile(repeat_http_latencies, 99)
     
         print(f"-> Total Executions: {total_repeats}")
-        print(f"-> Repeat Cache Hit Rate: {repeat_hit_rate:.2f}% (Official Target: >= 90%)")
+        print(f"-> Repeat Cache Hit Rate: {repeat_hit_rate:.2f}% (W07 Engineering Performance Target: >= 90%)")
         print(f"-> Server Latency: P50={p50_repeat_server:.2f}ms | P95={p95_repeat_server:.2f}ms | P99={p99_repeat_server:.2f}ms")
         print(f"-> End-to-End HTTP: P50={p50_repeat_http:.2f}ms | P95={p95_repeat_http:.2f}ms | P99={p99_repeat_http:.2f}ms")
         repeat_hit_gate_pass = repeat_hit_rate >= 90.0
@@ -361,7 +391,7 @@ def run_benchmark():
         p99_para_http = percentile(para_http_latencies, 99)
     
         print(f"-> Total Paraphrases Tested: {total_paras}")
-        print(f"-> Paraphrase Cache Hit Rate: {para_hit_rate:.2f}% (Official Target: >= 80%)")
+        print(f"-> Paraphrase Cache Hit Rate: {para_hit_rate:.2f}% (W07 Engineering Performance Target: >= 80%)")
         print(f"   - Semantic Hits: {para_semantic_hits} ({para_semantic_hits/total_paras*100:.1f}%)")
         print(f"   - Exact Hits: {para_exact_hits} ({para_exact_hits/total_paras*100:.1f}%)")
         print(f"-> Server Latency: P50={p50_para_server:.2f}ms | P95={p95_para_server:.2f}ms | P99={p99_para_server:.2f}ms")
@@ -392,6 +422,9 @@ def run_benchmark():
             cache_hit = resp.headers.get("X-Cache-Hit", "false").lower() == "true"
             cache_type = resp.headers.get("X-Cache-Type", "none")
             ext_path = resp.headers.get("X-Extraction-Path", "unknown")
+            cache_time_ms = float(resp.headers.get("X-Cache-Time-Ms", "0"))
+            extract_time_ms = float(resp.headers.get("X-Extract-Time-Ms", "0"))
+            serialize_time_ms = float(resp.headers.get("X-Serialize-Time-Ms", "0"))
     
             body = resp.json()
             # Parse through schema and validate with firewall
@@ -409,6 +442,9 @@ def run_benchmark():
                 "extraction_path": ext_path,
                 "server_latency_ms": round(proc_time_ms, 2),
                 "http_latency_ms": round(t_http, 2),
+                "cache_time_ms": round(cache_time_ms, 2),
+                "extract_time_ms": round(extract_time_ms, 2),
+                "serialize_time_ms": round(serialize_time_ms, 2),
                 "valid": len(errors) == 0,
                 "errors": errors,
                 "goal": parsed_obj.contexts[0].goal,
@@ -421,13 +457,28 @@ def run_benchmark():
         p95_unseen = percentile(unseen_latencies, 95)
         p99_unseen = percentile(unseen_latencies, 99)
         unseen_all_valid = all(r["valid"] for r in unseen_records)
+        # We can extract average component latency from unseen records if desired, but we will keep it simple here.
+        # We will parse headers for component latencies.
+        extract_times = []
+        cache_times = []
+        serialize_times = []
+        for r in unseen_records:
+            extract_times.append(r.get("extract_time_ms", 0.0))
+            cache_times.append(r.get("cache_time_ms", 0.0))
+            serialize_times.append(r.get("serialize_time_ms", 0.0))
+
+        p50_extract = percentile(extract_times, 50)
+        p50_cache = percentile(cache_times, 50)
+        p50_serialize = percentile(serialize_times, 50)
+
         print(f"-> Unseen Scenarios P50={p50_unseen:.2f}ms | P95={p95_unseen:.2f}ms | P99={p99_unseen:.2f}ms")
+        print(f"   - Component P50s: Cache={p50_cache:.2f}ms | Extraction={p50_extract:.2f}ms | Serialization={p50_serialize:.2f}ms")
         print(f"-> All Unseen Scenarios Schema & Firewall Valid: {unseen_all_valid} ({len(unseen_records)}/{len(unseen_records)})")
     
     # ------------------------------------------------------------------------
-    # 5. Official 12-Gate Schema & Quality Validation (Task 4)
+    # 5. 12-Gate Schema & Quality Validation (Engineering Benchmark)
     # ------------------------------------------------------------------------
-    print("\n[BENCHMARK 5] Running Official 12-Gate Schema & Quality Validation...")
+    print("\n[BENCHMARK 5] Running 12-Gate Schema & Quality Validation...")
     # Evaluate across all records in results.jsonl
     with open(CATALOG_FILE, "r", encoding="utf-8") as f:
         catalog_raw = json.load(f)
@@ -597,6 +648,7 @@ def run_benchmark():
     # Compile and return full benchmark summary
     # ------------------------------------------------------------------------
     summary = {
+        "metadata": metadata,
         "startup": {
             "duration_s": round(startup_duration, 4),
             "gate_pass": startup_gate_pass,
