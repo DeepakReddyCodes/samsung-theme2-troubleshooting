@@ -3,6 +3,9 @@ from typing import Dict, List, Optional
 from .models import NBERequest, NBEResponse, SelectedEvidence
 
 class NBEEvaluationEngine:
+    # Tolerance for floating point EIG comparisons to avoid selecting numerical noise
+    EIG_TOLERANCE = 1e-9
+
     @staticmethod
     def calculate_entropy(probabilities: List[float]) -> float:
         """Calculates Shannon entropy."""
@@ -142,12 +145,12 @@ class NBEEvaluationEngine:
             # Utility = EIG / Cost
             cost = candidate.cost
             if cost == 0.0:
-                utility = float('inf') if eig > 1e-9 else 0.0
+                utility = float('inf') if eig > self.EIG_TOLERANCE else 0.0
             else:
                 utility = eig / cost
 
-            # Only consider evidence if it gives *any* positive info gain
-            if eig > 1e-9:
+            # Only consider evidence if it gives positive info gain above numerical noise
+            if eig > self.EIG_TOLERANCE:
                 if utility > max_utility:
                     max_utility = utility
                     best_candidate = SelectedEvidence(

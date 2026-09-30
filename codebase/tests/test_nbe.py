@@ -427,3 +427,12 @@ def test_eig_infinite_utility(engine):
     assert resp.selected_evidence is not None
     assert resp.selected_evidence.utility_score == float('inf')
     assert resp.selected_evidence.evidence_id == "e1"
+
+def test_engine_posteriors_sum_to_one(engine):
+    priors = {"h1": 0.5, "h2": 0.5}
+    observations = {"e1": True}
+    likelihoods = {
+        "e1": {"h1": 0.9, "h2": 0.1}
+    }
+    posteriors = engine.get_posterior_probabilities(priors, observations, likelihoods)
+    assert sum(posteriors.values()) == pytest.approx(1.0)
