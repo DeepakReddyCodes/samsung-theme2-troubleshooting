@@ -314,15 +314,15 @@ def test_max_utility_tie_breaking(engine):
             Hypothesis(id="h2", description="Problem B", prior_probability=0.5)
         ],
         available_evidence=[
-            Evidence(id="e1", description="Evidence 1", cost=1.0),
-            Evidence(id="e2", description="Evidence 2", cost=1.0)
+            Evidence(id="e2", description="Evidence 2", cost=1.0),
+            Evidence(id="e1", description="Evidence 1", cost=1.0)
         ],
         observations=[],
         likelihoods=[
-            EvidenceLikelihood(evidence_id="e1", hypothesis_id="h1", probability_true=0.9),
-            EvidenceLikelihood(evidence_id="e1", hypothesis_id="h2", probability_true=0.1),
             EvidenceLikelihood(evidence_id="e2", hypothesis_id="h1", probability_true=0.9),
-            EvidenceLikelihood(evidence_id="e2", hypothesis_id="h2", probability_true=0.1)
+            EvidenceLikelihood(evidence_id="e2", hypothesis_id="h2", probability_true=0.1),
+            EvidenceLikelihood(evidence_id="e1", hypothesis_id="h1", probability_true=0.9),
+            EvidenceLikelihood(evidence_id="e1", hypothesis_id="h2", probability_true=0.1)
         ],
         sufficiency_threshold=0.9
     )
@@ -331,7 +331,6 @@ def test_max_utility_tie_breaking(engine):
     assert resp.selected_evidence is not None
     # since max() will keep the first strictly greater utility, tie goes to e1 (first in list)
     assert resp.selected_evidence.evidence_id == "e1"
-
 
 def test_eig_impossible_branch(engine):
     # If P(E=True|H)=1 for all H, then P(E=False)=0.

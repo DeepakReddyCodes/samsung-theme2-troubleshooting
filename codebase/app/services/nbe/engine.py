@@ -142,17 +142,27 @@ class NBEEvaluationEngine:
             # Utility = EIG / Cost
             cost = candidate.cost
             if cost == 0.0:
-                utility = float('inf') if eig > 0.0001 else 0.0
+                utility = float('inf') if eig > 1e-9 else 0.0
             else:
                 utility = eig / cost
 
-            if utility > max_utility and eig > 0.0001: # Small threshold for meaningful EIG
-                max_utility = utility
-                best_candidate = SelectedEvidence(
-                    evidence_id=candidate.id,
-                    eig_score=eig,
-                    utility_score=utility
-                )
+            # Only consider evidence if it gives *any* positive info gain
+            if eig > 1e-9:
+                if utility > max_utility:
+                    max_utility = utility
+                    best_candidate = SelectedEvidence(
+                        evidence_id=candidate.id,
+                        eig_score=eig,
+                        utility_score=utility
+                    )
+                elif utility == max_utility and best_candidate is not None:
+                    # Deterministic tie-breaking by ID if utilities are tied (including infinite)
+                    if candidate.id < best_candidate.evidence_id:
+                        best_candidate = SelectedEvidence(
+                            evidence_id=candidate.id,
+                            eig_score=eig,
+                            utility_score=utility
+                        )
 
         return NBEResponse(
             is_sufficient=False,
