@@ -20,6 +20,7 @@ import logging
 from pathlib import Path
 import re
 import time
+import threading
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 import numpy as np
@@ -172,6 +173,7 @@ class FastPathSemanticCache:
         enable_embeddings: bool = True,
         firewall: Optional[ValidationFirewall] = None,
     ):
+        self._lock = threading.Lock()
         self.semantic_threshold = semantic_threshold
         self.version_manager = CacheVersionManager(
             catalog_path=catalog_path,
@@ -291,22 +293,29 @@ class FastPathSemanticCache:
         Returns: (ContextDeeplinkResponse or None, telemetry_metadata)
         """
         t0 = time.perf_counter()
-        self.total_lookups += 1
+
+        with self._lock:
+            self.total_lookups += 1
+
+        # Live dependency invalidation
+        if not self.version_manager.check_version():
+            self.invalidate(reason="dependency_change")
+            self.version_manager._version_token = self.version_manager._generate_token()
 
         norm_query = normalize_query(query)
         fingerprint = compute_siis_fingerprint(siis_response)
         exact_key = self._compute_key(norm_query, fingerprint)
 
         # 1. Tier 1: Exact Hash Hit
-        if exact_key in self.exact_store:
-            entry = self.exact_store[exact_key]
+        with self._lock:
+            entry = self.exact_store.get(exact_key)
 
+        if entry:
             # Version isolation
-            if entry.key != self._compute_key(entry.normalized_query, entry.siis_fingerprint):
-                pass
-            else:
-                entry.hit_count += 1
-                self.exact_hits += 1
+            if entry.key == self._compute_key(entry.normalized_query, entry.siis_fingerprint):
+                with self._lock:
+                    entry.hit_count += 1
+                    self.exact_hits += 1
 
                 # Req 7: Cached responses MUST pass ValidationFirewall before return
                 validated_resp, errors = self.firewall.validate_response(entry.response, allow_repair=False)
@@ -315,64 +324,81 @@ class FastPathSemanticCache:
                     return None, {"cache_hit": False, "hit_type": "invalid_cached", "latency_ms": 0.0, "scenario_id": None, "confidence": 0.0}
 
                 t_ms = (time.perf_counter() - t0) * 1000.0
-                self.latencies_ms.append(t_ms)
+                with self._lock:
+                    self.latencies_ms.append(t_ms)
                 return validated_resp, {
-                "cache_hit": True,
-                "hit_type": "exact",
-                "latency_ms": round(t_ms, 3),
-                "scenario_id": entry.scenario_id,
-                "confidence": 1.0,
-            }
+                    "cache_hit": True,
+                    "hit_type": "exact",
+                    "latency_ms": round(t_ms, 3),
+                    "scenario_id": entry.scenario_id,
+                    "confidence": 1.0,
+                }
 
         # 2. Tier 2: Semantic Cosine Match
-        if self.model and self.vector_matrix is not None and len(self.entries_list) > 0:
+        with self._lock:
+            has_model = self.model is not None
+            has_matrix = self.vector_matrix is not None
+            num_entries = len(self.entries_list)
+
+        if has_model and has_matrix and num_entries > 0:
             query_vec = self._encode_text(norm_query)
             if query_vec is not None:
-                sims = np.dot(self.vector_matrix, query_vec)
-                candidate_indices = np.where(sims >= self.semantic_threshold)[0]
-                if len(candidate_indices) > 0:
-                    sorted_indices = candidate_indices[np.argsort(-sims[candidate_indices])]
-                    for idx in sorted_indices:
-                        candidate = self.entries_list[int(idx)]
-                        best_sim = float(sims[idx])
+                with self._lock:
+                    matrix_copy = np.copy(self.vector_matrix) if self.vector_matrix is not None else None
 
-                        # Strict Context Compatibility:
-                        # Candidate SIIS fingerprint MUST match the requested SIIS fingerprint
-                        # NEVER allow cross-article matching!
-                        if candidate.siis_fingerprint != fingerprint:
-                            continue
+                if matrix_copy is not None:
+                    sims = np.dot(matrix_copy, query_vec)
+                    candidate_indices = np.where(sims >= self.semantic_threshold)[0]
+                    if len(candidate_indices) > 0:
+                        sorted_indices = candidate_indices[np.argsort(-sims[candidate_indices])]
+                        for idx in sorted_indices:
+                            with self._lock:
+                                if int(idx) >= len(self.entries_list):
+                                    continue
+                                candidate = self.entries_list[int(idx)]
 
-                        # Intent conflict check
-                        if self._has_intent_conflict(norm_query, candidate.normalized_query):
-                            continue
+                            best_sim = float(sims[idx])
 
-                        # Version token mismatch
-                        if candidate.key != self._compute_key(candidate.normalized_query, candidate.siis_fingerprint):
-                            continue
+                            # Strict Context Compatibility:
+                            # Candidate SIIS fingerprint MUST match the requested SIIS fingerprint
+                            # NEVER allow cross-article matching!
+                            if candidate.siis_fingerprint != fingerprint:
+                                continue
 
-                        candidate.hit_count += 1
-                        self.semantic_hits += 1
+                            # Intent conflict check
+                            if self._has_intent_conflict(norm_query, candidate.normalized_query):
+                                continue
 
-                        # Req 7: Cached responses MUST pass ValidationFirewall before return
-                        validated_resp, errors = self.firewall.validate_response(candidate.response, allow_repair=False)
-                        if errors:
-                            logger.error(f"Semantic cached response failed validation on return: {errors}")
-                            continue  # Try next candidate if available
+                            # Version token mismatch
+                            if candidate.key != self._compute_key(candidate.normalized_query, candidate.siis_fingerprint):
+                                continue
 
-                        t_ms = (time.perf_counter() - t0) * 1000.0
-                        self.latencies_ms.append(t_ms)
-                        return validated_resp, {
-                            "cache_hit": True,
-                            "hit_type": "semantic",
-                            "latency_ms": round(t_ms, 3),
-                            "scenario_id": candidate.scenario_id,
-                            "confidence": round(best_sim, 4),
-                        }
+                            with self._lock:
+                                candidate.hit_count += 1
+                                self.semantic_hits += 1
+
+                            # Req 7: Cached responses MUST pass ValidationFirewall before return
+                            validated_resp, errors = self.firewall.validate_response(candidate.response, allow_repair=False)
+                            if errors:
+                                logger.error(f"Semantic cached response failed validation on return: {errors}")
+                                continue  # Try next candidate if available
+
+                            t_ms = (time.perf_counter() - t0) * 1000.0
+                            with self._lock:
+                                self.latencies_ms.append(t_ms)
+                            return validated_resp, {
+                                "cache_hit": True,
+                                "hit_type": "semantic",
+                                "latency_ms": round(t_ms, 3),
+                                "scenario_id": candidate.scenario_id,
+                                "confidence": round(best_sim, 4),
+                            }
 
         # 3. Cache Miss
-        self.misses += 1
-        t_ms = (time.perf_counter() - t0) * 1000.0
-        self.latencies_ms.append(t_ms)
+        with self._lock:
+            self.misses += 1
+            t_ms = (time.perf_counter() - t0) * 1000.0
+            self.latencies_ms.append(t_ms)
         return None, {
             "cache_hit": False,
             "hit_type": "miss",
@@ -394,13 +420,18 @@ class FastPathSemanticCache:
         """Store a validated ContextDeeplinkResponse in the cache."""
         # Enforce validation firewall before storing
         if validate:
-            validated_resp, errors = self.firewall.validate_response(response, allow_repair=True)
+            validated_resp, errors = self.firewall.validate_response(response, allow_repair=False)
             if errors:
                 logger.error(f"Cannot cache invalid response: {errors}")
                 return False
             final_response = validated_resp
         else:
             final_response = response
+
+        # Live dependency invalidation
+        if not self.version_manager.check_version():
+            self.invalidate(reason="dependency_change")
+            self.version_manager._version_token = self.version_manager._generate_token()
 
         norm_query = normalize_query(query)
         fingerprint = compute_siis_fingerprint(siis_response)
